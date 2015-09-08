@@ -16,10 +16,6 @@ CloudFormation do
     Type 'AWS::CloudFormation::Stack'
     Property('TemplateURL', FnJoin('', ['https://s3-', Ref('AWS::Region'), ".amazonaws.com/#{source_bucket}/ciinabox/#{ciinabox_version}/vpc.json"]))
     Property('TimeoutInMinutes', 5)
-    Property('Parameters',
-      EnvironmentType: Ref('EnvironmentType'),
-      DNSDomain: Ref('DNSDomain')
-    )
   }
 
 end
