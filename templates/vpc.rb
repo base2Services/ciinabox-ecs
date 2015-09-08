@@ -261,7 +261,7 @@ CloudFormation {
     Property('InstanceType', FnFindInMap('EnvironmentType','ciinabox','NatInstanceType'))
     Property('UserData', FnBase64(FnJoin("",[
       "#!/bin/bash\n",
-      "aws ec2 attach-network-interface --instance-id $(curl http://169.254.169.254/2014-11-05/meta-data/instance-id -s) --network-interface-id $(aws ec2 describe-network-interfaces --query 'NetworkInterfaces[*].[NetworkInterfaceId]' --filter Name=tag:reservation,Values=", "ciinabox-nat-$(curl http://169.254.169.254/2014-11-05/meta-data/placement/availability-zone/ -s | tail -c 1) --output text --region ap-southeast-2) --device-index 1 --region ap-southeast-2\n",
+      "aws ec2 attach-network-interface --instance-id $(curl http://169.254.169.254/2014-11-05/meta-data/instance-id -s) --network-interface-id $(aws ec2 describe-network-interfaces --query 'NetworkInterfaces[*].[NetworkInterfaceId]' --filter Name=tag:reservation,Values=", "ciinabox-nat-$(curl http://169.254.169.254/2014-11-05/meta-data/placement/availability-zone/ -s | tail -c 1) --output text --region ", Ref('AWS::Region'), ") --device-index 1 --region ", Ref('AWS::Region'), "\n",
       "sysctl -w net.ipv4.ip_forward=1\n",
       "iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE\n",
       "GW=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4/ | cut -d '.' -f 1-3).1\n",
