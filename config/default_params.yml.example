@@ -1,0 +1,70 @@
+#ciinabox default config
+ciinabox_version: 0.1
+
+#aws_profile: myprofile
+
+aws_region: ap-southeast-2
+
+#override S3 bucket location
+source_bucket: ciinabox-demo
+
+#ciinabox ECS cluster name
+cluster_name: ciinabox
+
+#change this to your own dns_domain
+#domain needs to be manage via route53 since the cloudformation adds additional records
+dns_domain: tools.example.com
+
+#AWS Availability Zones Idenifers
+availability_zones:
+  - 'A'
+  - 'B'
+
+azId:
+  A: 0
+  B: 1
+  C: 2
+  D: 3
+  E: 4
+
+#ciinabox environment config
+Mappings:
+  EnvironmentType:
+    ciinabox:
+      KeyName: ciinabox-shared
+      #SSLCertARN: "arn:aws:iam::<account_id>:server-certificate/ciinabox"
+      NetworkPrefix: 10
+      StackOctet: 150
+      StackMask: 16
+      SubnetMask: 26
+      NatInstanceType: t2.micro
+      ECSInstanceType: t2.large
+
+#Subnet offsets 10.150.x.0/26
+vpc:
+  SubnetOctetA: "0"
+  SubnetOctetB: "1"
+ecs:
+  SubnetOctetA: "2"
+  SubnetOctetB: "3"
+
+#Amazon Linux AMI 2015.03.1 (HVM), SSD Volume Type
+natAMI:
+  us-east-1:
+    ami: ami-0d4cfd66
+  us-west-2:
+    ami: ami-d5c5d1e5
+  ap-southeast-2:
+    ami: ami-db7b39e1
+  eu-west-1:
+    ami: ami-e4d18e93
+
+#Environment Access
+#add list of public IP addresses you want to access the environment from
+#default to public access probably best to change this
+opsAccess:
+  - 0.0.0.0/16
+#add list of public IP addresses for your developers to access the environment
+#default to public access probably best to change this
+devAccess:
+  - 0.0.0.0/16

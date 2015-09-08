@@ -1,0 +1,3 @@
+output/*.json
+Gemfile.lock
+config/default_params.yml
