@@ -16,6 +16,10 @@ CfnDsl::RakeTask.new do |t|
       {
         filename: 'templates/vpc.rb',
         output: 'output/vpc.json'
+      },
+      {
+        filename: 'templates/ecs-cluster.rb',
+        output: 'output//ecs-cluster.json'
       }
     ],
     extras: [

@@ -59,6 +59,16 @@ natAMI:
   eu-west-1:
     ami: ami-e4d18e93
 
+ecs_ami:
+  us-east-1:
+    ami: ami-b540eade
+  us-west-2:
+    ami: ami-cb584dfb
+  ap-southeast-2:
+    ami: ami-5ddc9f67
+  eu-west-1:
+    ami: ami-2aaef35d
+
 #Environment Access
 #add list of public IP addresses you want to access the environment from
 #default to public access probably best to change this

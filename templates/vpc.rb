@@ -266,7 +266,8 @@ CloudFormation {
       "iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE\n",
       "GW=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4/ | cut -d '.' -f 1-3).1\n",
       "route del -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 0\n",
-      "route add -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 10002\n"
+      "route add -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 10002\n",
+      "echo 'done!!!!'\n"
     ])))
   }
 
