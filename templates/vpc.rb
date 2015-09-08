@@ -266,8 +266,7 @@ CloudFormation {
       "iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE\n",
       "GW=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4/ | cut -d '.' -f 1-3).1\n",
       "route del -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 0\n",
-      "route add -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 10002\n",
-      "/opt/urbanise/ec2_bootstrap ", Ref("AWS::Region"), "\n"
+      "route add -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 10002\n"
     ])))
   }
 
@@ -293,7 +292,7 @@ CloudFormation {
     Resource("Nat#{az}RecordSet") {
       Type 'AWS::Route53::RecordSet'
       DependsOn ["NetworkInterface#{az}"]
-      Property('HostedZoneId', dns_domain )
+      Property('HostedZoneName', dns_domain )
       Property('Comment', "NAT Record Set")
       Property('Name', FnJoin('.', [ "nat#{az}",dns_domain ]))
       Property('Type', "A")
