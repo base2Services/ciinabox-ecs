@@ -1,11 +1,8 @@
 CloudFormation do
-  # Default params
-  cluster_name ||= 'ciinabox'
-  source_bucket ||= 'ciinabox_demo'
 
   # Template metadata
   AWSTemplateFormatVersion '2010-09-09'
-  Description 'Ciinabox ECS - Master'
+  Description "Ciinabox ECS - Master v#{ciinabox_version}"
 
   Resource(cluster_name) {
     Type 'AWS::ECS::Cluster'
