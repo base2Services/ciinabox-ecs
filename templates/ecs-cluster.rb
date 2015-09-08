@@ -165,7 +165,7 @@ CloudFormation {
       "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref('ECSDataVolume'), " --instance-id i-${INSTANCE_ID} --device /dev/sdf\n",
       "[[ `file -s /dev/xvdf` == \"/dev/xvdf: data\" ]] && mkfs -t ext4 /dev/xvdf\n",
       "mkdir -p /data\n",
-      "echo '/dev/xvdf1   /data        ext4    defaults,nofail 0   2' >> /etc/fstab\n",
+      "echo '/dev/xvdf   /data        ext4    defaults,nofail 0   2' >> /etc/fstab\n",
       "mount -a\n",
       "chmod -R 777 /data\n",
       "stop ecs\n",
