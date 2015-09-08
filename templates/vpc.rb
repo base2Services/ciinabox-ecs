@@ -292,7 +292,7 @@ CloudFormation {
     Resource("Nat#{az}RecordSet") {
       Type 'AWS::Route53::RecordSet'
       DependsOn ["NetworkInterface#{az}"]
-      Property('HostedZoneName', dns_domain )
+      Property('HostedZoneName', FnJoin('', [ dns_domain, '.' ]))
       Property('Comment', "NAT Record Set")
       Property('Name', FnJoin('.', [ "nat#{az}",dns_domain ]))
       Property('Type', "A")
