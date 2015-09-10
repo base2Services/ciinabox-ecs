@@ -1,3 +1,4 @@
-output/*.json
+output/**/*.json
 Gemfile.lock
 config/default_params.yml
+ssl/

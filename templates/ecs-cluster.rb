@@ -78,17 +78,18 @@ CloudFormation {
             {
               Effect: 'Allow',
               Action: [
-                'ecs:CreateCluster',
-                'ecs:DeregisterContainerInstance',
-                'ecs:DiscoverPollEndpoint',
-                'ecs:Poll',
-                'ecs:RegisterContainerInstance',
-                'ecs:Submit*',
-                'elasticloadbalancing:Describe*',
-                'elasticloadbalancing:DeregisterInstancesFromLoadBalancer',
-                'elasticloadbalancing:RegisterInstancesWithLoadBalancer',
-                'ec2:Describe*',
-                'ec2:AuthorizeSecurityGroupIngress'
+                "ecs:CreateCluster",
+                "ecs:DeregisterContainerInstance",
+                "ecs:DiscoverPollEndpoint",
+                "ecs:Poll",
+                "ecs:RegisterContainerInstance",
+                "ecs:StartTelemetrySession",
+                "ecs:Submit*",
+                "ec2:AuthorizeSecurityGroupIngress",
+                "ec2:Describe*",
+                "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                "elasticloadbalancing:Describe*",
+                "elasticloadbalancing:RegisterInstancesWithLoadBalancer"
               ],
               Resource: '*'
             }
@@ -168,6 +169,8 @@ CloudFormation {
       "echo '/dev/xvdf   /data        ext4    defaults,nofail 0   2' >> /etc/fstab\n",
       "mount -a\n",
       "chmod -R 777 /data\n",
+      "mkdir -p /data/jenkins\n",
+      "chown -R 1000:1000 /data/jenkins\n",
       "stop ecs\n",
       "service docker restart\n",
       "start ecs\n",
@@ -192,5 +195,11 @@ CloudFormation {
     addTag("EnvironmentType", 'ciinabox', true)
     addTag("Role", "ciinabox-ecs", true)
   }
+
+  availability_zones.each do |az|
+    Output("ECSSubnetPrivate#{az}") {
+      Value(Ref("SubnetPrivate#{az}"))
+    }
+  end
 
 }

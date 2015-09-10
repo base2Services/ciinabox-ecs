@@ -121,6 +121,8 @@ CloudFormation {
   rules = []
   opsAccess.each do |ip|
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
   end
 
   Resource("SecurityGroupOps") {
@@ -133,6 +135,8 @@ CloudFormation {
   rules = []
   devAccess.each do |ip|
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
   end
 
   Resource("SecurityGroupDev") {
@@ -294,7 +298,7 @@ CloudFormation {
       Type 'AWS::Route53::RecordSet'
       DependsOn ["NetworkInterface#{az}"]
       Property('HostedZoneName', FnJoin('', [ dns_domain, '.' ]))
-      Property('Comment', "NAT Record Set")
+      Property('Comment', "ciinabox NAT Public Record Set")
       Property('Name', FnJoin('.', [ "nat#{az}",dns_domain ]))
       Property('Type', "A")
       Property('TTL', "60")
@@ -321,4 +325,13 @@ CloudFormation {
   Output("SecurityGroupBackplane") {
     Value(Ref('SecurityGroupBackplane'))
   }
+
+  Output("SecurityGroupOps") {
+    Value(Ref('SecurityGroupOps'))
+  }
+
+  Output("SecurityGroupDev") {
+    Value(Ref('SecurityGroupDev'))
+  }
+
 }

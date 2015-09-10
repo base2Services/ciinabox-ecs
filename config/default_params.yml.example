@@ -78,3 +78,6 @@ opsAccess:
 #default to public access probably best to change this
 devAccess:
   - 0.0.0.0/16
+
+# Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs  
+#default_ssl_cert_id: "arn:aws:iam::<account_id>:server-certificate/ciinabox"
