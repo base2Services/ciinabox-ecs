@@ -1,19 +1,23 @@
 #ciinabox default config
 ciinabox_version: 0.1
 
-#aws_profile: myprofile
+ciinabox_name: <%= ciinabox_name %>
 
-aws_region: ap-southeast-2
+aws_profile: <%= ciinabox_name %>
+
+aws_region: <%= ciinabox_region %>
+
+aws_account_id: <%= ciinabox_aws_account %>
 
 #override S3 bucket location
-source_bucket: ciinabox-demo
+source_bucket: <%= ciinabox_source_bucket %>
 
 #ciinabox ECS cluster name
 cluster_name: ciinabox
 
 #change this to your own dns_domain
 #domain needs to be manage via route53 since the cloudformation adds additional records
-dns_domain: tools.example.com
+dns_domain: <%= ciinabox_tools_domain %>
 
 #AWS Availability Zones Idenifers
 availability_zones:
@@ -32,7 +36,7 @@ Mappings:
   EnvironmentType:
     ciinabox:
       KeyName: ciinabox-shared
-      #SSLCertARN: "arn:aws:iam::<account_id>:server-certificate/ciinabox"
+      SSLCertARN: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
       NetworkPrefix: 10
       StackOctet: 150
       StackMask: 16
@@ -79,5 +83,5 @@ opsAccess:
 devAccess:
   - 0.0.0.0/16
 
-# Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs  
-#default_ssl_cert_id: "arn:aws:iam::<account_id>:server-certificate/ciinabox"
+# Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs
+default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
