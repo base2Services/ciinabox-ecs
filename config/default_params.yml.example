@@ -35,7 +35,7 @@ azId:
 Mappings:
   EnvironmentType:
     ciinabox:
-      KeyName: ciinabox-shared
+      KeyName: ciinabox
       SSLCertARN: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
       NetworkPrefix: 10
       StackOctet: 150
@@ -77,11 +77,11 @@ ecs_ami:
 #add list of public IP addresses you want to access the environment from
 #default to public access probably best to change this
 opsAccess:
-  - 0.0.0.0/16
+  - 0.0.0.0/0
 #add list of public IP addresses for your developers to access the environment
 #default to public access probably best to change this
 devAccess:
-  - 0.0.0.0/16
+  - 0.0.0.0/0
 
 # Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs
 default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
