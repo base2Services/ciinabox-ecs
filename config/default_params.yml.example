@@ -15,6 +15,9 @@ source_bucket: <%= ciinabox_source_bucket %>
 #ciinabox ECS cluster name
 cluster_name: ciinabox
 
+#log level - change to :debug to see the AWS commands being executed
+log_level: :info
+
 #change this to your own dns_domain
 #domain needs to be manage via route53 since the cloudformation adds additional records
 dns_domain: <%= ciinabox_tools_domain %>
