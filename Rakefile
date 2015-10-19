@@ -237,7 +237,7 @@ namespace :ciinabox do
     puts "# execute the following:"
     puts "ssh -A ec2-user@nata.#{config['dns_domain']} -i #{keypair}"
     puts "# and then"
-    puts "ssh #{display_ecs_ip_address(config)}"
+    puts "ssh #{get_ecs_ip_address(config)}"
   end
 
 
@@ -252,7 +252,9 @@ namespace :ciinabox do
     config['aws_profile'].nil? ? '' : cmd << "--profile #{config['aws_profile']}"
     config['aws_region'].nil? ? '' : cmd << "--region #{config['aws_region']}"
     args = cmd.join(" ")
-    puts "executing: aws #{args}"
+    if config['log_level'] == :debug
+      puts "executing: aws #{args}"
+    end
     if output.nil?
       result = `aws #{args} 2>&1`
     else
@@ -270,6 +272,15 @@ namespace :ciinabox do
   end
 
   def display_ecs_ip_address(config)
+    ip_address = get_ecs_ip_address(config)
+    if ip_address.nil?
+      puts "Unable to get ECS cluster private ip"
+    else
+      puts "ECS cluster private ip:#{result}"
+    end
+  end
+
+  def get_ecs_ip_address(config)
     status, result = aws_execute( config, [
       'ec2',
       'describe-instances',
@@ -277,9 +288,9 @@ namespace :ciinabox do
       '--out text'
     ])
     if status > 0
-      puts "Unable to get ECS cluster private ip"
+      return nil
     else
-      puts "ECS cluster private ip:#{result}"
+      return result
     end
   end
 
