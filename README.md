@@ -137,6 +137,7 @@ Runs a cloudformation update on the current ciinabox environment. You can use th
 A common update would be to lock down ip access to your ciinabox environment
 
 1. edit ciinaboxes/myciinabox/config/default_params.yml
+
   ```yaml
   ....
   #Environment Access
@@ -151,6 +152,7 @@ A common update would be to lock down ip access to your ciinabox environment
     - my-dev-teams-ip
   ....
   ```
+  
 2. update your ciinabox
   ```bash
   $ rake ciinabox:generate
