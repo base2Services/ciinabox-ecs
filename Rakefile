@@ -276,7 +276,7 @@ namespace :ciinabox do
     if ip_address.nil?
       puts "Unable to get ECS cluster private ip"
     else
-      puts "ECS cluster private ip:#{result}"
+      puts "ECS cluster private ip:#{ip_address}"
     end
   end
 
