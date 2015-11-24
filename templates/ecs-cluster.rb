@@ -197,6 +197,26 @@ CloudFormation {
     addTag("Role", "ciinabox-ecs", true)
   }
 
+  if defined? scale_up_schedule
+    Resource("ScheduledActionUp") {
+      Type 'AWS::AutoScaling::ScheduledAction'
+      Property('AutoScalingGroupName', Ref('AutoScaleGroup'))
+      Property('MinSize','1')
+      Property('MaxSize', '1')
+      Property('Recurrence', scale_up_schedule)
+    }
+  end
+
+  if defined? scale_down_schedule
+    Resource("ScheduledActionDown") {
+      Type 'AWS::AutoScaling::ScheduledAction'
+      Property('AutoScalingGroupName', Ref('AutoScaleGroup'))
+      Property('MinSize','0')
+      Property('MaxSize', '0')
+      Property('Recurrence', scale_down_schedule)
+    }
+  end
+
   availability_zones.each do |az|
     Output("ECSSubnetPrivate#{az}") {
       Value(Ref("SubnetPrivate#{az}"))
