@@ -1,6 +1,8 @@
 require 'cfndsl'
+require_relative '../ext/helper.rb'
 
 CloudFormation {
+
   # Template metadata
   AWSTemplateFormatVersion "2010-09-09"
   Description "ciinabox - VPC v#{ciinabox_version}"
@@ -291,6 +293,27 @@ CloudFormation {
       addTag("EnvironmentType", 'ciinabox', true)
       addTag("Role", "nat", true)
     }
+
+    if defined? scale_up_schedule
+      Resource("ScheduledActionUp#{az}") {
+        Type 'AWS::AutoScaling::ScheduledAction'
+        Property('AutoScalingGroupName', Ref("AutoScaleGroup#{az}"))
+        Property('MinSize','1')
+        Property('MaxSize', '1')
+        Property('Recurrence', nat_scale_up_schedule(scale_up_schedule))
+      }
+    end
+
+    if defined? scale_down_schedule
+      Resource("ScheduledActionDown#{az}") {
+        Type 'AWS::AutoScaling::ScheduledAction'
+        Property('AutoScalingGroupName', Ref("AutoScaleGroup#{az}"))
+        Property('MinSize','0')
+        Property('MaxSize', '0')
+        Property('Recurrence', scale_down_schedule)
+      }
+    end
+
   end
 
   availability_zones.each do |az|
@@ -305,6 +328,8 @@ CloudFormation {
       Property('ResourceRecords', [ Ref("NatIPAddress#{az}") ] )
     }
   end
+
+
 
   Output("VPCId") {
     Value(Ref('VPC'))
