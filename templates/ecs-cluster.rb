@@ -203,6 +203,7 @@ CloudFormation {
       Property('AutoScalingGroupName', Ref('AutoScaleGroup'))
       Property('MinSize','1')
       Property('MaxSize', '1')
+      Property('DesiredCapacity', '1')
       Property('Recurrence', scale_up_schedule)
     }
   end
@@ -213,6 +214,7 @@ CloudFormation {
       Property('AutoScalingGroupName', Ref('AutoScaleGroup'))
       Property('MinSize','0')
       Property('MaxSize', '0')
+      Property('DesiredCapacity', '0')
       Property('Recurrence', scale_down_schedule)
     }
   end
