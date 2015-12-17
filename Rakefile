@@ -34,7 +34,7 @@ namespace :ciinabox do
 
   desc('Initialse a new ciinabox environment')
   task :init do |t, args|
-    ciinabox_name = get_input("Enter the name of ypur ciinabox:")
+    ciinabox_name = get_input("Enter the name of your ciinabox:")
     ciinabox_aws_account = get_input("Enter the id of your aws account you wish to use with ciinabox")
     ciinabox_region = get_input("Enter the AWS region to create your ciinabox (e.g: ap-southeast-2):")
     ciinabox_source_bucket = get_input("Enter the name of the S3 bucket to deploy ciinabox to:")
