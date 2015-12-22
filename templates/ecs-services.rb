@@ -159,7 +159,7 @@ CloudFormation {
       # ECS Task Def and Service  Stack
       Resource("#{service_name}Stack") {
         Type 'AWS::CloudFormation::Stack'
-        Property('TemplateURL', FnJoin('', ['https://s3-', Ref('AWS::Region'), ".amazonaws.com/#{source_bucket}/ciinabox/#{ciinabox_version}/services/#{service_name}.json"]))
+        Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/services/#{service_name}.json")
         Property('TimeoutInMinutes', 5)
         Property('Parameters',{
           ECSCluster: Ref('ECSCluster'),

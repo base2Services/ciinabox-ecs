@@ -11,14 +11,14 @@ CloudFormation do
   # VPC Stack
   Resource('VPCStack') {
     Type 'AWS::CloudFormation::Stack'
-    Property('TemplateURL', FnJoin('', ['https://s3-', Ref('AWS::Region'), ".amazonaws.com/#{source_bucket}/ciinabox/#{ciinabox_version}/vpc.json"]))
+    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/vpc.json")
     Property('TimeoutInMinutes', 5)
   }
 
   # ECS Cluster Stack
   Resource('ECSStack') {
     Type 'AWS::CloudFormation::Stack'
-    Property('TemplateURL', FnJoin('', ['https://s3-', Ref('AWS::Region'), ".amazonaws.com/#{source_bucket}/ciinabox/#{ciinabox_version}/ecs-cluster.json"]))
+    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/ecs-cluster.json")
     Property('TimeoutInMinutes', 5)
     Property('Parameters',{
       ECSCluster: Ref(cluster_name),
@@ -34,7 +34,7 @@ CloudFormation do
   # ECS Services Stack
   Resource('ECSServicesStack') {
     Type 'AWS::CloudFormation::Stack'
-    Property('TemplateURL', FnJoin('', ['https://s3-', Ref('AWS::Region'), ".amazonaws.com/#{source_bucket}/ciinabox/#{ciinabox_version}/ecs-services.json"]))
+    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/ecs-services.json")
     Property('TimeoutInMinutes', 5)
     Property('Parameters',{
       ECSCluster: Ref(cluster_name),
