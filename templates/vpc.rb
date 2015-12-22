@@ -256,34 +256,40 @@ CloudFormation {
       Property('NetworkInterfaceId',Ref("NetworkInterface#{az}"))
     }
   end
-
-  Resource("LaunchConfig") {
-    Type 'AWS::AutoScaling::LaunchConfiguration'
-    Property('ImageId', FnFindInMap('NatAMI',Ref('AWS::Region'),'ami') )
-    Property('AssociatePublicIpAddress',true)
-    Property('IamInstanceProfile', Ref('InstanceProfile'))
-    Property('KeyName', FnFindInMap('EnvironmentType','ciinabox','KeyName') )
-    Property('SecurityGroups',[ Ref('SecurityGroupBackplane'),Ref('SecurityGroupInternalNat'),Ref('SecurityGroupOps') ])
-    Property('InstanceType', FnFindInMap('EnvironmentType','ciinabox','NatInstanceType'))
-    Property('UserData', FnBase64(FnJoin("",[
-      "#!/bin/bash\n",
-      "aws ec2 attach-network-interface --instance-id $(curl http://169.254.169.254/2014-11-05/meta-data/instance-id -s) --network-interface-id $(aws ec2 describe-network-interfaces --query 'NetworkInterfaces[*].[NetworkInterfaceId]' --filter Name=tag:reservation,Values=", "ciinabox-nat-$(curl http://169.254.169.254/2014-11-05/meta-data/placement/availability-zone/ -s | tail -c 1) --output text --region ", Ref('AWS::Region'), ") --device-index 1 --region ", Ref('AWS::Region'), "\n",
-      "sysctl -w net.ipv4.ip_forward=1\n",
-      "iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE\n",
-      "GW=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4/ | cut -d '.' -f 1-3).1\n",
-      "route del -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 0\n",
-      "route add -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 10002\n",
-      "echo 'done!!!!'\n"
-    ])))
-  }
-
   availability_zones.each do |az|
+
+    Resource("LaunchConfig#{az}") {
+      Type 'AWS::AutoScaling::LaunchConfiguration'
+      Property('ImageId', FnFindInMap('NatAMI',Ref('AWS::Region'),'ami') )
+      Property('AssociatePublicIpAddress',true)
+      Property('IamInstanceProfile', Ref('InstanceProfile'))
+      Property('KeyName', FnFindInMap('EnvironmentType','ciinabox','KeyName') )
+      Property('SecurityGroups',[ Ref('SecurityGroupBackplane'),Ref('SecurityGroupInternalNat'),Ref('SecurityGroupOps') ])
+      Property('InstanceType', FnFindInMap('EnvironmentType','ciinabox','NatInstanceType'))
+      Property('UserData', FnBase64(FnJoin("",[
+        "#!/bin/bash\n",
+        "export NEW_HOSTNAME=nat#{az}-ciinabox-`/opt/aws/bin/ec2-metadata --instance-id|/usr/bin/awk '{print $2}'`\n",
+        "echo \"NEW_HOSTNAME=$NEW_HOSTNAME\" \n",
+        "hostname $NEW_HOSTNAME\n",
+        "sed -i \"s/^\(HOSTNAME=\).*/\\$NEW_HOSTNAME/\" /etc/sysconfig/network\n",
+        "ATTACH_ID=`aws ec2 describe-network-interfaces --query 'NetworkInterfaces[*].[Attachment][*][*].AttachmentId' --filter Name=network-interface-id,Values='", Ref("NetworkInterface#{az}") ,"' --region ", Ref("AWS::Region"), " --output text`\n",
+        "aws ec2 detach-network-interface --attachment-id $ATTACH_ID  --region", Ref("AWS::Region") ," --force \n",
+        "aws ec2 attach-network-interface --instance-id $(curl http://169.254.169.254/2014-11-05/meta-data/instance-id -s) --network-interface-id ", Ref("NetworkInterface#{az}") ," --device-index 1 --region ", Ref("AWS::Region"), "\n",
+        "sysctl -w net.ipv4.ip_forward=1\n",
+        "iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE\n",
+        "GW=$(curl -s http://169.254.169.254/2014-11-05/meta-data/local-ipv4/ | cut -d '.' -f 1-3).1\n",
+        "route del -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 0\n",
+        "route add -net 0.0.0.0 gw $GW netmask 0.0.0.0 dev eth0 metric 10002\n",
+        "echo 'done!!!!'\n"
+      ])))
+    }
+
     AutoScalingGroup("AutoScaleGroup#{az}") {
       UpdatePolicy("AutoScalingRollingUpdate", {
         "MinInstancesInService" => "0",
         "MaxBatchSize"          => "1",
       })
-      LaunchConfigurationName Ref('LaunchConfig')
+      LaunchConfigurationName Ref("LaunchConfig#{az}")
       HealthCheckGracePeriod '500'
       MinSize 1
       MaxSize 1
