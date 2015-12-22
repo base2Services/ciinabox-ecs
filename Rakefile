@@ -268,7 +268,7 @@ namespace :ciinabox do
     puts "export CIINABOXES_DIR=\"#{ciinaboxes_dir}\""
     puts "export CIINABOX=\"#{ciinabox}\""
     puts "# or run"
-    puts "eval $(rake ciinabox:active[#{ciinabox}])"
+    puts "eval \"$(rake ciinabox:active[#{ciinabox}])\""
   end
 
   def display_ecs_ip_address(config)

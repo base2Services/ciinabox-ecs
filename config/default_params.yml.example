@@ -34,6 +34,11 @@ azId:
   D: 3
   E: 4
 
+# Uncomment below to enable ciinabox environment scheduling
+# times are in UTC
+# scale_up_schedule: 0 7 * * 1-5
+# scale_down_schedule: 0 19 * * *
+
 #ciinabox environment config
 Mappings:
   EnvironmentType:
