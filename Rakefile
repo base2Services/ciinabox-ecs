@@ -168,7 +168,7 @@ namespace :ciinabox do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['cloudformation', 'create-stack',
       '--stack-name ciinabox',
-      "--template-url https://s3-#{config['aws_region']}.amazonaws.com/#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
+      "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
       '--capabilities CAPABILITY_IAM'
     ])
     puts result
@@ -185,7 +185,7 @@ namespace :ciinabox do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['cloudformation', 'update-stack',
       '--stack-name ciinabox',
-      "--template-url https://s3-#{config['aws_region']}.amazonaws.com/#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
+      "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
       '--capabilities CAPABILITY_IAM'
     ])
     puts result
