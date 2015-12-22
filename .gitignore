@@ -1,5 +1,6 @@
 output/**/*.json
 Gemfile.lock
 ciinaboxes/
+ciinaboxes
 config/default_params.yml
 ssl/
