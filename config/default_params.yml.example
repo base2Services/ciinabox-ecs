@@ -58,23 +58,23 @@ ecs:
 #Amazon Linux AMI 2015.03.1 (HVM), SSD Volume Type
 natAMI:
   us-east-1:
-    ami: ami-0d4cfd66
+    ami: ami-60b6c60a
   us-west-2:
-    ami: ami-d5c5d1e5
+    ami: ami-f0091d91
   ap-southeast-2:
-    ami: ami-db7b39e1
+    ami: ami-48d38c2b
   eu-west-1:
-    ami: ami-e4d18e93
+    ami: ami-bff32ccc
 
 ecs_ami:
   us-east-1:
-    ami: ami-b540eade
+    ami: ami-6ff4bd05
   us-west-2:
-    ami: ami-cb584dfb
+    ami: ami-313d2150
   ap-southeast-2:
-    ami: ami-5ddc9f67
+    ami: ami-00e7bf63
   eu-west-1:
-    ami: ami-2aaef35d
+    ami: ami-8073d3f3
 
 #Environment Access
 #add list of public IP addresses you want to access the environment from
