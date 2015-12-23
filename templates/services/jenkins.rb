@@ -7,7 +7,6 @@ CloudFormation {
 
   Parameter("ECSCluster"){ Type 'String' }
   Parameter("ECSRole"){ Type 'String' }
-  Parameter("ServiceELB"){ Type 'String' }
 
   Resource('JenkinsTask') {
     Type "AWS::ECS::TaskDefinition"
@@ -17,14 +16,20 @@ CloudFormation {
         Memory: 2024,
         Cpu: 300,
         Image: 'base2/ciinabox-jenkins',
-        PortMappings: [{
-          HostPort: 8080,
-          ContainerPort: 8080
-        }],
-        Environment: [{
-          Name: 'JAVA_OPTS',
-          Value: '-Duser.timezone=America/Los_Angeles'
-        }],
+        Environment: [
+          {
+            Name: 'JAVA_OPTS',
+            Value: "-Duser.timezone=#{timezone}"
+          },
+          {
+            Name: 'VIRTUAL_HOST',
+            Value: "jenkins.#{dns_domain}"
+          },
+          {
+            Name: 'VIRTUAL_PORT',
+            Value: '8080'
+          }
+        ],
         Essential: true,
         MountPoints: [
           {
@@ -60,10 +65,6 @@ CloudFormation {
     Type 'AWS::ECS::Service'
     Property('Cluster', Ref('ECSCluster'))
     Property('DesiredCount', 1)
-    Property('Role', Ref('ECSRole'))
     Property('TaskDefinition', Ref('JenkinsTask'))
-    Property('LoadBalancers', [
-      { ContainerName: 'jenkins', ContainerPort: '8080', LoadBalancerName: Ref('ServiceELB') }
-    ])
   }
 }
