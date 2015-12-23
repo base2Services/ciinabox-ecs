@@ -114,47 +114,97 @@ CloudFormation {
     ])
   }
 
+  Resource('CiinaboxProxyELB') {
+    Type 'AWS::ElasticLoadBalancing::LoadBalancer'
+    Property('Listeners',[
+      { LoadBalancerPort: '80', InstancePort: '8080', Protocol: 'HTTP' },
+      { LoadBalancerPort: '443', InstancePort: '8080', Protocol: 'HTTPS', SSLCertificateId: default_ssl_cert_id  }
+    ])
+    Property('HealthCheck', {
+      Target: "TCP:8080",
+      HealthyThreshold: '3',
+      UnhealthyThreshold: '2',
+      Interval: '15',
+      Timeout: '5'
+    })
+    Property('CrossZone',true)
+    Property('SecurityGroups',[
+      Ref('SecurityGroupBackplane'),
+      Ref('SecurityGroupOps'),
+      Ref('SecurityGroupDev')
+    ])
+    Property('Subnets',[
+      Ref('SubnetPublicA'),Ref('SubnetPublicB')
+    ])
+  }
+
+  Resource("CiinaboxProxyDNS") {
+    Type 'AWS::Route53::RecordSet'
+    Property('HostedZoneName', FnJoin('', [ dns_domain, '.']))
+    Property('Name', FnJoin('', ['*.', dns_domain, '.']))
+    Property('Type','A')
+    Property('AliasTarget', {
+      'DNSName' => FnGetAtt('CiinaboxProxyELB','DNSName'),
+      'HostedZoneId' => FnGetAtt('CiinaboxProxyELB','CanonicalHostedZoneNameID')
+    })
+  }
+
+  Resource('ProxyTask') {
+    Type "AWS::ECS::TaskDefinition"
+    Property('ContainerDefinitions', [
+      {
+        Name: 'proxy',
+        Memory: 256,
+        Cpu: 100,
+        Image: 'jwilder/nginx-proxy',
+        PortMappings: [{
+          HostPort: 8080,
+          ContainerPort: 80
+        }],
+        Essential: true,
+        MountPoints: [
+          {
+            ContainerPath: '/etc/localtime',
+            SourceVolume: 'timezone',
+            ReadOnly: true
+          },
+          {
+            ContainerPath: '/tmp/docker.sock',
+            SourceVolume: 'docker_sock',
+            ReadOnly: false
+          }
+        ]
+      }
+    ])
+    Property('Volumes', [
+      {
+        Name: 'timezone',
+        Host: {
+          SourcePath: '/etc/localtime'
+        }
+      },
+      {
+        Name: 'docker_sock',
+        Host: {
+          SourcePath: '/var/run/docker.sock'
+        }
+      }
+    ])
+  }
+
+  Resource('ProxyService') {
+    Type 'AWS::ECS::Service'
+    Property('Cluster', Ref('ECSCluster'))
+    Property('DesiredCount', 1)
+    Property('Role', Ref('ECSRole'))
+    Property('TaskDefinition', Ref('ProxyTask'))
+    Property('LoadBalancers', [
+      { ContainerName: 'proxy', ContainerPort: '80', LoadBalancerName: Ref('CiinaboxProxyELB') }
+    ])
+  }
+
   services.each do |name|
     name.each do |service_name, service|
-
-      listeners = []
-      ssl_cert_id = service['ssl_cert_id'] || default_ssl_cert_id
-      listeners << { LoadBalancerPort: '80', InstancePort: service['service_port'], Protocol: 'HTTP' }
-      listeners << { LoadBalancerPort: '443', InstancePort: service['service_port'], Protocol: 'HTTPS', SSLCertificateId: ssl_cert_id  } if service['https_enabled']
-
-      Resource("#{service_name}ELB2") {
-        Type 'AWS::ElasticLoadBalancing::LoadBalancer'
-        Property('Listeners', listeners)
-        Property('HealthCheck', {
-          Target: "TCP:#{service['service_port']}",
-          HealthyThreshold: '3',
-          UnhealthyThreshold: '2',
-          Interval: '15',
-          Timeout: '5'
-        })
-        Property('CrossZone',true)
-        Property('SecurityGroups',[
-          Ref('SecurityGroupBackplane'),
-          Ref('SecurityGroupOps'),
-          Ref('SecurityGroupDev')
-        ])
-        Property('Subnets',[
-          Ref('SubnetPublicA'),Ref('SubnetPublicB')
-        ])
-      }
-
-      subdomain_prefix = service['subdomain_prefix'] || service_name
-
-      Resource("#{service_name}DNS") {
-        Type 'AWS::Route53::RecordSet'
-        Property('HostedZoneName', FnJoin('', [ dns_domain, '.']))
-        Property('Name', FnJoin('', [subdomain_prefix, '.', dns_domain, '.']))
-        Property('Type','A')
-        Property('AliasTarget', {
-          'DNSName' => FnGetAtt("#{service_name}ELB2",'DNSName'),
-          'HostedZoneId' => FnGetAtt("#{service_name}ELB2",'CanonicalHostedZoneNameID')
-        })
-      }
 
       # ECS Task Def and Service  Stack
       Resource("#{service_name}Stack") {
@@ -163,8 +213,7 @@ CloudFormation {
         Property('TimeoutInMinutes', 5)
         Property('Parameters',{
           ECSCluster: Ref('ECSCluster'),
-          ECSRole: Ref('ECSRole'),
-          ServiceELB: Ref("#{service_name}ELB2")
+          ECSRole: Ref('ECSRole')
         })
       }
 
