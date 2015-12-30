@@ -118,6 +118,7 @@ CloudFormation {
     Type 'AWS::ElasticLoadBalancing::LoadBalancer'
     Property('Listeners',[
       { LoadBalancerPort: '80', InstancePort: '8080', Protocol: 'HTTP' },
+      { LoadBalancerPort: '50000', InstancePort: '50000', Protocol: 'TCP' },
       { LoadBalancerPort: '443', InstancePort: '8080', Protocol: 'HTTPS', SSLCertificateId: default_ssl_cert_id  }
     ])
     Property('HealthCheck', {
@@ -213,7 +214,8 @@ CloudFormation {
         Property('TimeoutInMinutes', 5)
         Property('Parameters',{
           ECSCluster: Ref('ECSCluster'),
-          ECSRole: Ref('ECSRole')
+          ECSRole: Ref('ECSRole'),
+          ServiceELB: Ref('CiinaboxProxyELB')
         })
       }
 

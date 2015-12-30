@@ -125,6 +125,7 @@ CloudFormation {
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: ip }
   end
 
   Resource("SecurityGroupOps") {
@@ -139,6 +140,7 @@ CloudFormation {
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: ip }
   end
 
   Resource("SecurityGroupDev") {
@@ -156,7 +158,8 @@ CloudFormation {
       { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
       { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
       { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
-      { IpProtocol: 'tcp', FromPort: '8080', ToPort: '8080', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) }
+      { IpProtocol: 'tcp', FromPort: '8080', ToPort: '8080', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+      { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) }
     ])
   }
 
