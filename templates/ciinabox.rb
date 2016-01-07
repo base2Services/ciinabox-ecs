@@ -38,6 +38,7 @@ CloudFormation do
     Property('TimeoutInMinutes', 5)
     Property('Parameters',{
       ECSCluster: Ref(cluster_name),
+      VPC: FnGetAtt('VPCStack', 'Outputs.VPCId'),
       SubnetPublicA: FnGetAtt('VPCStack', 'Outputs.SubnetPublicA'),
       SubnetPublicB: FnGetAtt('VPCStack', 'Outputs.SubnetPublicB'),
       ECSSubnetPrivateA: FnGetAtt('ECSStack', 'Outputs.ECSSubnetPrivateA'),
