@@ -3,6 +3,7 @@ require 'rake'
 require 'yaml'
 require 'erb'
 require 'fileutils'
+require "net/http"
 
 namespace :ciinabox do
 
@@ -43,6 +44,7 @@ namespace :ciinabox do
       puts 'You must enter a name for you ciinabox'
       exit 1
     end
+    my_public_ip = get_my_public_ip_address + "/32"
     create_dirs ciinaboxes_dir, ciinabox_name
     config_tmpl = File.read("config/default_params.yml.example")
     default_config =  ERB.new(config_tmpl).result(binding)
@@ -309,5 +311,9 @@ namespace :ciinabox do
       FileUtils.mkdir_p(ssl_dirname)
     end
     config_dirname
+  end
+
+  def get_my_public_ip_address
+    Net::HTTP.get(URI("https://api.ipify.org"))
   end
 end
