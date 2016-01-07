@@ -8,6 +8,7 @@ CloudFormation {
 
   # Parameters
   Parameter("ECSCluster"){ Type 'String' }
+  Parameter("VPC"){ Type 'String' }
   Parameter("SubnetPublicA"){ Type 'String' }
   Parameter("SubnetPublicB"){ Type 'String' }
   Parameter("ECSSubnetPrivateA"){ Type 'String' }
@@ -114,6 +115,22 @@ CloudFormation {
     ])
   }
 
+  if defined? webHooks
+    rules = []
+    webHooks.each do |ip|
+      rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    end
+  else
+    rules = [{IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: '192.168.1.1/32'}]
+  end
+
+  Resource("SecurityGroupWebHooks") {
+    Type 'AWS::EC2::SecurityGroup'
+    Property('VpcId', Ref('VPC'))
+    Property('GroupDescription', 'WebHooks like github')
+    Property('SecurityGroupIngress', rules)
+  }
+
   Resource('CiinaboxProxyELB') {
     Type 'AWS::ElasticLoadBalancing::LoadBalancer'
     Property('Listeners',[
@@ -132,7 +149,8 @@ CloudFormation {
     Property('SecurityGroups',[
       Ref('SecurityGroupBackplane'),
       Ref('SecurityGroupOps'),
-      Ref('SecurityGroupDev')
+      Ref('SecurityGroupDev'),
+      Ref('SecurityGroupWebHooks')
     ])
     Property('Subnets',[
       Ref('SubnetPublicA'),Ref('SubnetPublicB')

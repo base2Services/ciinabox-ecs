@@ -22,6 +22,9 @@ log_level: :info
 #domain needs to be manage via route53 since the cloudformation adds additional records
 dns_domain: <%= ciinabox_tools_domain %>
 
+#change this to your own timezone
+timezone: GMT
+
 #AWS Availability Zones Idenifers
 availability_zones:
   - 'A'
@@ -85,11 +88,14 @@ ecs_ami:
 #add list of public IP addresses you want to access the environment from
 #default to public access probably best to change this
 opsAccess:
-  - 0.0.0.0/0
+  - <%=my_public_ip%>
 #add list of public IP addresses for your developers to access the environment
 #default to public access probably best to change this
 devAccess:
-  - 0.0.0.0/0
+  - <%=my_public_ip%>
+#Webhook access only via https
+webHooks:
+  - 192.30.252.0/22 #github
 
 # Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs
 default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"

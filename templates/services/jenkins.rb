@@ -1,5 +1,9 @@
 require 'cfndsl'
 
+if !defined? timezone
+  timezone = 'GMT'
+end
+
 CloudFormation {
 
   AWSTemplateFormatVersion "2010-09-09"
