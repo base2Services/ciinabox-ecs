@@ -13,10 +13,18 @@ namespace :ciinabox do
   ciinabox_name = ENV['CIINABOX'] || ''
   config = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/default_params.yml")) if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/default_params.yml")
 
+  #if {ciinaboxes_dir}/#{ciinabox_name}/templates
+  #render and add to templates
+
+  if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/templates")
+    templates2 = Dir["#{ciinaboxes_dir}/#{ciinabox_name}/templates/**/*.rb"]
+    templates = templates + templates2
+  end
+
   files = []
   templates.each do |template|
     filename = "#{template}"
-    output = template.sub! 'templates/', ''
+    output = template.sub! /.*templates\//, ''
     output = output.sub! '.rb', '.json'
     files << { filename: filename, output: "output/#{output}" }
   end

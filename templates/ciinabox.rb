@@ -49,5 +49,27 @@ CloudFormation do
     })
   }
 
+  #Foreign templates
+  #for f in foreign templates do:
+  #new stack f.stack_name, f.url_name, f.params, f.depends
+  extra_stacks.each do | stack, details |
+    Resource(stack) {
+      Type 'AWS::CloudFormation::Stack'
+      Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/#{stack}.json")
+      Property('Parameters',{
+        VPC: FnGetAtt('VPCStack', 'Outputs.VPCId'),
+        SubnetPublicA: FnGetAtt('VPCStack', 'Outputs.SubnetPublicA'),
+        SubnetPublicB: FnGetAtt('VPCStack', 'Outputs.SubnetPublicB'),
+        SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane'),
+        SecurityGroupOps: FnGetAtt('VPCStack', 'Outputs.SecurityGroupOps'),
+        SecurityGroupDev: FnGetAtt('VPCStack', 'Outputs.SecurityGroupDev'),
+        RouteTablePrivateA: FnGetAtt('VPCStack', 'Outputs.RouteTablePrivateA'),
+        RouteTablePrivateB: FnGetAtt('VPCStack', 'Outputs.RouteTablePrivateB'),
+        EnvironmentType: 'ciinabox',
+        EnvironmentName: 'ciinabox',
+        RoleName: details['role']
+      })
+    }
+  end
 
 end
