@@ -51,7 +51,7 @@ Mappings:
       NetworkPrefix: 10
       StackOctet: 150
       StackMask: 16
-      SubnetMask: 26
+      SubnetMask: 24
       NatInstanceType: t2.micro
       ECSInstanceType: t2.large
 
