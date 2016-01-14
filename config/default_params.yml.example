@@ -99,3 +99,7 @@ webHooks:
 
 # Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs
 default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
+
+#extra_stacks:
+#  elk:
+#    role: search
