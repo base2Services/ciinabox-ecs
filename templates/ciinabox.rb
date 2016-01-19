@@ -89,4 +89,32 @@ CloudFormation do
     end
   end
 
+  Output("Region") {
+    Value(Ref('AWS:Region'))
+  }
+
+  Output("VPCId") {
+    Value(FnGetAtt('VPCStack', 'Outputs.VPCId'))
+  }
+
+  availability_zones.each do |az|
+    Output("PublicSubnet#{az}") {
+      Value(FnGetAtt('VPCStack', "Outputs.SubnetPublic#{az}"))
+    }
+  end
+
+  availability_zones.each do |az|
+    Output("ECSPrivateSubnet#{az}") {
+      Value(FnGetAtt('ECSStack', "Outputs.ECSSubnetPrivate#{az}"))
+    }
+  end
+
+  Output("SecurityGroup") {
+    Value(FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane'))
+  }
+
+  Output("ECSRole") {
+    Value(FnGetAtt('ECSStack', 'Outputs.ECSRole'))
+  }
+
 end

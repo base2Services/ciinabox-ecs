@@ -103,6 +103,7 @@ CloudFormation {
             {
               Effect: 'Allow',
               Action: [
+                'cloudformation:*'
                 'ec2:AttachVolume',
                 'ec2:CreateVolume',
                 'ec2:DeleteVolume',
@@ -222,6 +223,12 @@ CloudFormation {
   availability_zones.each do |az|
     Output("ECSSubnetPrivate#{az}") {
       Value(Ref("SubnetPrivate#{az}"))
+    }
+  end
+
+  availability_zones.each do |az|
+    Output("ECSRole") {
+      Value(Ref('Role'))
     }
   end
 
