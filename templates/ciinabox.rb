@@ -90,7 +90,7 @@ CloudFormation do
   end
 
   Output("Region") {
-    Value(Ref('AWS:Region'))
+    Value(Ref('AWS::Region'))
   }
 
   Output("VPCId") {

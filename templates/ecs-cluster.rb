@@ -103,7 +103,7 @@ CloudFormation {
             {
               Effect: 'Allow',
               Action: [
-                'cloudformation:*'
+                'cloudformation:*',
                 'ec2:AttachVolume',
                 'ec2:CreateVolume',
                 'ec2:DeleteVolume',
