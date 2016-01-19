@@ -102,4 +102,10 @@ default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificat
 
 #extra_stacks:
 #  elk:
-#    role: search
+#    #define template name? - optional
+#    file_name: elk
+#    parameters:
+#      RoleName: search
+#      CertName: x
+#      StackOctetA: 11
+#      StackOctetB: 12  

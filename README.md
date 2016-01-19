@@ -152,7 +152,7 @@ A common update would be to lock down ip access to your ciinabox environment
     - my-dev-teams-ip
   ....
   ```
-  
+
 2. update your ciinabox
   ```bash
   $ rake ciinabox:generate
@@ -176,3 +176,21 @@ Not Yet implemented...pull-request welcome
 ### ciinabox:down
 
 Not Yet implemented...pull-request welcome
+
+## Adding Custom Templates per ciinabox
+
+Custom templates should be defined under <CIINABOXES_DIR>/<CIINABOX>/templates.
+
+For each stack that needs to be included add a stack under extra_stacks in the config.yml.  
+
+By default the name of the nested stack will be assumed to be the file name when the template is getting called.  This can be overriden.  
+
+Parameters get passed in as a hash and all get passed in from the top level.
+
+\#extra_stacks:
+\#  elk:
+\#    #define template name? - optional
+\#    file_name: elk
+\#    parameters:
+\#      RoleName: search
+\#      CertName: x  
