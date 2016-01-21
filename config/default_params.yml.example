@@ -76,13 +76,13 @@ natAMI:
 
 ecs_ami:
   us-east-1:
-    ami: ami-6ff4bd05
+    ami: ami-cb2305a1
   us-west-2:
-    ami: ami-313d2150
+    ami: ami-ec75908c
   ap-southeast-2:
-    ami: ami-00e7bf63
+    ami: ami-83af8ae0
   eu-west-1:
-    ami: ami-8073d3f3
+    ami: ami-13f84d60
 
 #Environment Access
 #add list of public IP addresses you want to access the environment from
@@ -108,4 +108,4 @@ default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificat
 #      RoleName: search
 #      CertName: x
 #      StackOctetA: 11
-#      StackOctetB: 12  
+#      StackOctetB: 12
