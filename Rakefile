@@ -35,7 +35,7 @@ namespace :ciinabox do
       files: files,
       extras: [
         [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/default_params.yml" ],
-        [ :yaml, 'config/services.yml' ],
+        [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml" ],
         [ :ruby, 'ext/helper.rb']
       ]
     }
