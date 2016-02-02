@@ -1,4 +1,4 @@
-# ciinabox services configuration
+# ciinabox services default configuration
 
 services:
   - jenkins:

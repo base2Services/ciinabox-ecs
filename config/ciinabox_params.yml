@@ -1,0 +1,41 @@
+#ciinabox default config
+ciinabox_name: <%= ciinabox_name %>
+
+aws_profile: <%= ciinabox_name %>
+
+aws_region: <%= ciinabox_region %>
+
+aws_account_id: <%= ciinabox_aws_account %>
+
+#override S3 bucket location
+source_bucket: <%= ciinabox_source_bucket %>
+
+#change this to your own dns_domain
+#domain needs to be manage via route53 since the cloudformation adds additional records
+dns_domain: <%= ciinabox_tools_domain %>
+
+#ciinabox environment config
+Mappings:
+  EnvironmentType:
+    ciinabox:
+      KeyName: ciinabox
+      SSLCertARN: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
+      NetworkPrefix: 10
+      StackOctet: 150
+      StackMask: 16
+      SubnetMask: 24
+      NatInstanceType: t2.micro
+      ECSInstanceType: t2.large
+
+#Environment Access
+#add list of public IP addresses you want to access the environment from
+#default to public access probably best to change this
+opsAccess:
+  - <%=my_public_ip%>
+#add list of public IP addresses for your developers to access the environment
+#default to public access probably best to change this
+devAccess:
+  - <%=my_public_ip%>
+
+# Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs
+default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
