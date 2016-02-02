@@ -121,9 +121,9 @@ requires ruby 2.1+
   Starting updating of ciinabox environment
   # checking status using
   $ rake ciinabox:status
-  allday ciinabox is in state: CREATE_IN_PROGRESS
+  base2 ciinabox is in state: CREATE_IN_PROGRESS
   # When your ciinabox environment is ready the status will be
-  allday ciinabox is alive!!!!
+  base2 ciinabox is alive!!!!
   ECS cluster private ip:10.xx.xx.xx
   ```
   You can access jenkins using http://jenkins.myciinabox.com
