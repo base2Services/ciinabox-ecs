@@ -85,6 +85,7 @@ CloudFormation {
     OutboundNetworkAclEntry:                ['104','-1','allow','true','0.0.0.0/0','0','65535']
   }
 
+  # merges acls defined in config with acls in vpc template incrementing the RuleNumber by 1
   if defined? customAcl
     rule_number = acls.length + 99
     customAcl.each do |acl|
