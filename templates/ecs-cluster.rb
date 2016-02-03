@@ -226,10 +226,12 @@ CloudFormation {
     }
   end
 
-  availability_zones.each do |az|
-    Output("ECSRole") {
-      Value(Ref('Role'))
-    }
-  end
+  Output("ECSRole") {
+    Value(Ref('Role'))
+  }
+
+  Output("ECSInstanceProfile") {
+    Value(Ref('InstanceProfile'))
+  }
 
 }
