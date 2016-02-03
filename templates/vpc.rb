@@ -90,7 +90,8 @@ CloudFormation {
     rule_number = acls.length + 99
     customAcl.each do |acl|
       rule_number += 1
-      acls.merge!(acl['Name'] => [rule_number,acl['Protocol'],'allow',acl['Egress'],acl['CidrBlock'],acl['Port'],acl['Port']])
+      acls.merge!((acl['Egress'] ? 'Outbound' : 'Inbound') + acl['Name'] + 'PublicNetworkAclEntry' =>
+        [rule_number,acl['Protocol'],'allow',acl['Egress'],acl['CidrBlock'] ? acl['CidrBlock'] : '0.0.0.0/0',acl['Port'],acl['Port']])
     end
   end
 
