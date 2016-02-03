@@ -84,6 +84,15 @@ CloudFormation {
     InboundEphemeralPublicNetworkAclEntry:  ['103','6','allow','false','0.0.0.0/0','1024','65535'],
     OutboundNetworkAclEntry:                ['104','-1','allow','true','0.0.0.0/0','0','65535']
   }
+
+  if defined? customAcl
+    rule_number = acls.length + 99
+    customAcl.each do |acl|
+      rule_number += 1
+      acls.merge!(acl['Name'] => [rule_number,acl['Protocol'],'allow',acl['Egress'],acl['CidrBlock'],acl['Port'],acl['Port']])
+    end
+  end
+
   acls.each do |alcName,alcProperties|
     Resource(alcName) {
       Type 'AWS::EC2::NetworkAclEntry'
