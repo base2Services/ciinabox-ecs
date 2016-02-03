@@ -131,13 +131,22 @@ CloudFormation {
     Property('SecurityGroupIngress', rules)
   }
 
+  elb_listners = []
+  elb_listners << { LoadBalancerPort: '80', InstancePort: '8080', Protocol: 'HTTP' }
+  elb_listners << { LoadBalancerPort: '443', InstancePort: '8080', Protocol: 'HTTPS', SSLCertificateId: default_ssl_cert_id  }
+  services.each do |service|
+    if service.is_a?(Hash) && ( !service.values.include? nil )
+      service.each do |name, properties|
+        unless properties['LoadBalancerPort'].nil? || properties['InstancePort'].nil? || properties['Protocol'].nil?
+          elb_listners << { LoadBalancerPort: properties['LoadBalancerPort'], InstancePort: properties['InstancePort'], Protocol: properties['Protocol'] }
+        end
+      end
+    end
+  end
+
   Resource('CiinaboxProxyELB') {
     Type 'AWS::ElasticLoadBalancing::LoadBalancer'
-    Property('Listeners',[
-      { LoadBalancerPort: '80', InstancePort: '8080', Protocol: 'HTTP' },
-      { LoadBalancerPort: '50000', InstancePort: '50000', Protocol: 'TCP' },
-      { LoadBalancerPort: '443', InstancePort: '8080', Protocol: 'HTTPS', SSLCertificateId: default_ssl_cert_id  }
-    ])
+    Property('Listeners', elb_listners)
     Property('HealthCheck', {
       Target: "TCP:8080",
       HealthyThreshold: '3',
