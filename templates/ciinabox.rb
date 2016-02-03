@@ -117,4 +117,8 @@ CloudFormation do
     Value(FnGetAtt('ECSStack', 'Outputs.ECSRole'))
   }
 
+  Output("ECSInstanceProfile") {
+    Value(FnGetAtt('ECSStack', 'Outputs.ECSInstanceProfile'))
+  }
+
 end
