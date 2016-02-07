@@ -1,0 +1,7 @@
+# ciinabox services default configuration
+
+services:
+  - jenkins:
+      LoadBalancerPort: 50000
+      InstancePort: 50000
+      Protocol: TCP

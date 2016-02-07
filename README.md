@@ -18,9 +18,38 @@ requires ruby 2.1+
 3. bundle install
 4. rake -T
 
+If setting your own parameters and additional services, they should be configured as such:
+
+#### User-defined parameters:
+ciinaboxes/ciinabox_name/config/params.yml
+
+e.g:
+```ruby
+log_level: :debug
+timezone: Australia:Melbourne
+```
+
+#### User-defined services:
+If you wish to add additional containers to your ciinabox environment, you can specify them like so:
+ciinaboxes/ciinabox_name/config/services.yml
+
+e.g:
+```yaml
+---
+services:
+- bitbucket:
+    service_port: 8080
+    https_enabled: true
+- icinga:
+    service_port: 3080
+    https_enabled: true
+```
+
+Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
+
 ## Getting Started
 
-1. Initialize/Create a new ciinabox environment
+1. Initialize/Create a new ciinabox environment. Please note that any user-defined services and parameters will be merged during this task into the default templates
   ```bash
   $ rake ciinabox:init
   Enter the name of ypur ciinabox:

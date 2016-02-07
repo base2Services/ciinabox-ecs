@@ -11,7 +11,8 @@ namespace :ciinabox do
   templates = Dir["templates/**/*.rb"]
   ciinaboxes_dir = ENV['CIINABOXES_DIR'] || 'ciinaboxes'
   ciinabox_name = ENV['CIINABOX'] || ''
-  config = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/default_params.yml")) if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/default_params.yml")
+  config = YAML.load(File.read("config/default_params.yml.example")) if File.exist?("config/default_params.yml.example")
+
 
   #if {ciinaboxes_dir}/#{ciinabox_name}/templates
   #render and add to templates
@@ -34,7 +35,7 @@ namespace :ciinabox do
       verbose: true,
       files: files,
       extras: [
-        [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/default_params.yml" ],
+        [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml" ],
         [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml" ],
         [ :ruby, 'ext/helper.rb']
       ]
@@ -54,9 +55,46 @@ namespace :ciinabox do
     end
     my_public_ip = get_my_public_ip_address + "/32"
     create_dirs ciinaboxes_dir, ciinabox_name
-    config_tmpl = File.read("config/default_params.yml.example")
-    default_config =  ERB.new(config_tmpl).result(binding)
-    File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/default_params.yml", 'w') { |f| f.write(default_config) }
+
+    #Settings preference - 1) User-input 2) User-provided params.yml 3) Default template
+
+    ciinabox_params = File.read("config/ciinabox_params.yml")
+    default_params = YAML.load(File.read("config/default_params.yml"))
+    default_services = YAML.load(File.read("config/default_services.yml"))
+
+    if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
+      user_params = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml"))
+    else
+      user_params = default_params
+    end
+
+    input_result =  ERB.new(ciinabox_params).result(binding) #grab result of user input, place into default user Template
+    input_hash = YAML.load(input_result) #place user-entered results into hash
+    combined_params = default_params.merge(user_params) #grab provided default template and merge with user-provided params
+    final_hash = combined_params.merge(input_hash) #merge user params + default template with user-entered results
+    final_config = final_hash.to_yaml #convert final hash into a YAML file, to be written
+
+    File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml", 'w') { |f| f.write(final_config) }
+
+    #Include user-provided custom services if provided under config/services.yml
+
+    class ::Hash
+      def deep_merge(second)
+        merger = proc { |key, v1, v2| Hash === v1 && Hash === v2 ? v1.merge(v2, &merger) : Array === v1 && Array === v2 ? v1 | v2 : [:undefined, nil, :nil].include?(v2) ? v1 : v2 }
+        self.merge(second.to_h, &merger)
+      end
+    end
+
+    if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml")
+      puts "Using user-provided services.yml File"
+      user_services = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml"))
+      combined_services = default_services.deep_merge(user_services)
+      yml_combined_services = combined_services.to_yaml
+      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml", 'w') { |f| f.write(yml_combined_services) }
+    else
+      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml", 'w') { |f| f.write(default_services) }
+    end
+
     display_active_ciinabox ciinaboxes_dir, ciinabox_name
   end
 
