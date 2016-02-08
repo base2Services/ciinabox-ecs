@@ -11,7 +11,7 @@ namespace :ciinabox do
   templates = Dir["templates/**/*.rb"]
   ciinaboxes_dir = ENV['CIINABOXES_DIR'] || 'ciinaboxes'
   ciinabox_name = ENV['CIINABOX'] || ''
-  config = YAML.load(File.read("config/default_params.yml.example")) if File.exist?("config/default_params.yml.example")
+  config = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")) if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
 
 
   #if {ciinaboxes_dir}/#{ciinabox_name}/templates
@@ -50,7 +50,7 @@ namespace :ciinabox do
     ciinabox_source_bucket = get_input("Enter the name of the S3 bucket to deploy ciinabox to:")
     ciinabox_tools_domain = get_input("Enter top level domain (e.g tools.example.com), must exist in Route53 in the same AWS account:")
     if ciinabox_name == ''
-      puts 'You must enter a name for you ciinabox'
+      puts 'You must enter a name for your ciinabox'
       exit 1
     end
     my_public_ip = get_my_public_ip_address + "/32"
@@ -98,13 +98,13 @@ namespace :ciinabox do
     display_active_ciinabox ciinaboxes_dir, ciinabox_name
   end
 
-  desc('switch active ciinabox')
+  desc('Switch active ciinabox')
   task :active, :ciinabox do |t, args|
     ciinabox = args[:ciinabox] || ciinabox_name
     display_active_ciinabox ciinaboxes_dir, ciinabox
   end
 
-  desc('current status of the active ciinabox')
+  desc('Current status of the active ciinabox')
   task :status do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['cloudformation', 'describe-stacks', "--stack-name ciinabox", '--query "Stacks[0].StackStatus"', '--out text'] )
@@ -121,7 +121,7 @@ namespace :ciinabox do
     end
   end
 
-  desc('creates the source bucket for deploying ciinabox')
+  desc('Creates the source bucket for deploying ciinabox')
   task :create_source_bucket do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['s3', 'ls', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"] )
@@ -139,7 +139,7 @@ namespace :ciinabox do
     end
   end
 
-  desc('create self-signed SSL certs for use with ciinabox')
+  desc('Create self-signed SSL certs for use with ciinabox')
   task :create_server_cert do
     check_active_ciinabox(config)
     ciinabox_name = config['ciinabox_name']
@@ -154,7 +154,7 @@ namespace :ciinabox do
     puts result
   end
 
-  desc('upload ssl server certs for ciinabox')
+  desc('Uploads SSL server certs for ciinabox')
   task :upload_server_cert  do
     check_active_ciinabox(config)
     ciinabox_name = config['ciinabox_name']
@@ -174,7 +174,7 @@ namespace :ciinabox do
     puts "Successfully uploaded server-certificates"
   end
 
-  desc('generate ciinabox aws keypair')
+  desc('Generate ciinabox AWS keypair')
   task :generate_keypair do
     check_active_ciinabox(config)
     ciinabox_name = config['ciinabox_name']
@@ -198,7 +198,7 @@ namespace :ciinabox do
     end
   end
 
-  desc('deploy cloudformation templates to S3')
+  desc('Deploy Cloudformation templates to S3')
   task :deploy do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['s3', 'sync', '--delete', 'output/', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"] )
@@ -211,7 +211,7 @@ namespace :ciinabox do
     end
   end
 
-  desc('creates the ciinabox environment')
+  desc('Creates the ciinabox environment')
   task :create do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['cloudformation', 'create-stack',
@@ -221,14 +221,14 @@ namespace :ciinabox do
     ])
     puts result
     if status > 0
-      puts "fail to create ciinabox environment"
+      puts "Failed to create ciinabox environment"
       exit status
     else
       puts "Starting creation of ciinabox environment"
     end
   end
 
-  desc('updates the ciinabox environment')
+  desc('Updates the ciinabox environment')
   task :update do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['cloudformation', 'update-stack',
@@ -238,28 +238,28 @@ namespace :ciinabox do
     ])
     puts result
     if status > 0
-      puts "fail to update ciinabox environment"
+      puts "Failed to update ciinabox environment"
       exit status
     else
       puts "Starting updating of ciinabox environment"
     end
   end
 
-  desc('turn off your ciinabox environment')
+  desc('Turn off your ciinabox environment')
   task :down do
     check_active_ciinabox(config)
     puts "Not Yet implemented...pull-request welcome"
     #find all ASG and set min/max/desired to 0
   end
 
-  desc('turn on your ciinabox environment')
+  desc('Turn on your ciinabox environment')
   task :up do
     check_active_ciinabox(config)
     puts "Not Yet implemented...pull-request welcome"
     #find all ASG and set min/max/desired to 1
   end
 
-  desc('delete/tears down the ciinabox environment')
+  desc('Deletes/tears down the ciinabox environment')
   task :tear_down do
     check_active_ciinabox(config)
     STDOUT.puts "Are you sure you want to tear down the #{config['ciinabox_name']} ciinabox? (y/n)"
@@ -278,7 +278,7 @@ namespace :ciinabox do
     end
   end
 
-  desc('ssh into your ciinabox environment')
+  desc('SSH into your ciinabox environment')
   task :ssh do
     keypair = "#{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem"
     `ssh-add #{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem`
