@@ -26,7 +26,7 @@ ciinaboxes/ciinabox_name/config/params.yml
 e.g:
 ```ruby
 log_level: :debug
-timezone: Australia:Melbourne
+timezone: Australia/Melbourne
 ```
 
 #### User-defined services:
@@ -37,12 +37,14 @@ e.g:
 ```yaml
 ---
 services:
-- bitbucket:
-    service_port: 8080
-    https_enabled: true
-- icinga:
-    service_port: 3080
-    https_enabled: true
+  - jenkins:
+      LoadBalancerPort: 50000
+      InstancePort: 50000
+      Protocol: TCP
+  - bitbucket:
+      LoadBalancerPort: 22
+      InstancePort: 7999
+      Protocol: TCP
 ```
 
 Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
