@@ -356,7 +356,7 @@ CloudFormation {
     route_tables << Ref("RouteTablePrivate#{az}")
   end
 
-  Resource("VPCEndpoint") {
+  Resource("S3VPCEndpoint") {
     Type "AWS::EC2::VPCEndpoint"
     Property("PolicyDocument", {
       Version:"2012-10-17",

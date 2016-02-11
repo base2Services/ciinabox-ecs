@@ -100,5 +100,5 @@ default_ssl_cert_id: "arn:aws:iam::198712987398:server-certificate/ciinabox"
 #    parameters:
 #      RoleName: search
 #      CertName: x
-#      StackOctetA: 11
-#      StackOctetB: 12
+#      SubnetOctetA: 11
+#      SubnetOctetB: 12
