@@ -351,6 +351,26 @@ CloudFormation {
     }
   end
 
+  route_tables = []
+  availability_zones.each do |az|
+    route_tables << Ref("RouteTablePrivate#{az}")
+  end
+
+  Resource("S3VPCEndpoint") {
+    Type "AWS::EC2::VPCEndpoint"
+    Property("PolicyDocument", {
+      Version:"2012-10-17",
+      Statement:[{
+        Effect:"Allow",
+        Principal: "*",
+        Action:["*"],
+        Resource:["arn:aws:s3:::*"]
+      }]
+    })
+    Property("RouteTableIds", route_tables)
+    Property("ServiceName", FnJoin("", [ "com.amazonaws.", Ref("AWS::Region"), ".s3"]))
+    Property("VpcId",  Ref('VPC'))
+  }
 
 
   Output("VPCId") {
