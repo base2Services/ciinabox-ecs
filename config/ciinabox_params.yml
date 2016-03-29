@@ -14,19 +14,6 @@ source_bucket: <%= ciinabox_source_bucket %>
 #domain needs to be manage via route53 since the cloudformation adds additional records
 dns_domain: <%= ciinabox_tools_domain %>
 
-#ciinabox environment config
-Mappings:
-  EnvironmentType:
-    ciinabox:
-      KeyName: ciinabox
-      SSLCertARN: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
-      NetworkPrefix: 10
-      StackOctet: 150
-      StackMask: 16
-      SubnetMask: 24
-      NatInstanceType: t2.micro
-      ECSInstanceType: t2.large
-
 #Environment Access
 #add list of public IP addresses you want to access the environment from
 #default to public access probably best to change this
@@ -39,3 +26,8 @@ devAccess:
 
 # Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs
 default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
+
+# Uncomment below to enable ciinabox environment scheduling
+# times are in UTC
+# scale_up_schedule: 0 7 * * 1-5
+# scale_down_schedule: 0 19 * * *
