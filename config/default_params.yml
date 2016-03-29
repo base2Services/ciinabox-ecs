@@ -6,13 +6,13 @@ cluster_name: ciinabox
 #log level - change to :debug to see the AWS commands being executed
 log_level: :info
 
+#change this to your own timezone
+timezone: GMT
+
 #AWS Availability Zones Idenifers
 availability_zones:
   - 'A'
   - 'B'
-
-#change this to your own timezone
-timezone: GMT
 
 azId:
   A: 0
@@ -21,11 +21,6 @@ azId:
   D: 3
   E: 4
 
-# Uncomment below to enable ciinabox environment scheduling
-# times are in UTC
-# scale_up_schedule: 0 7 * * 1-5
-# scale_down_schedule: 0 19 * * *
-
 #Subnet offsets 10.150.x.0/26
 vpc:
   SubnetOctetA: "0"
@@ -33,6 +28,18 @@ vpc:
 ecs:
   SubnetOctetA: "2"
   SubnetOctetB: "3"
+
+#ciinabox environment config
+Mappings:
+  EnvironmentType:
+    ciinabox:
+      KeyName: ciinabox
+      NetworkPrefix: 10
+      StackOctet: 150
+      StackMask: 16
+      SubnetMask: 26
+      NatInstanceType: t2.micro
+      ECSInstanceType: t2.large
 
 #Amazon Linux AMI 2015.03.1 (HVM), SSD Volume Type
 natAMI:
