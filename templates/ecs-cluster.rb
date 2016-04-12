@@ -126,6 +126,7 @@ CloudFormation {
                 'ec2:RegisterImage',
                 'ec2:CreateTags',
                 'ec2:ModifyImageAttribute',
+		'ec2:GetPasswordData',
                 'iam:PassRole'
               ],
               Resource: '*'
