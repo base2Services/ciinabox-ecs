@@ -1,6 +1,6 @@
 # ciinabox ECS
 
-ciinabox (CI in a Box) pronounced ciin a box is a set of automation for building
+ciinabox pronounced ciin a box is a set of automation for building
 and managing a bunch of CI tools in AWS using the Elastic Container Service (ECS).
 
 Right Now ciinabox supports deploying:
