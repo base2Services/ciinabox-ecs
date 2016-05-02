@@ -12,6 +12,18 @@ CloudFormation {
   Parameter("ECSCluster"){ Type 'String' }
   Parameter("ECSRole"){ Type 'String' }
   Parameter("ServiceELB"){ Type 'String' }
+  Parameter("ContainerImage") {
+    Type 'String'
+    Default 'atlassian/bitbucket-server'
+  }
+  Parameter("HostPort") {
+    Type 'String'
+    Default '7999'
+  }
+  Parameter("ContainerPort") {
+    Type 'String'
+    Default '7999'
+  }
 
   Resource('BitbucketTask') {
     Type "AWS::ECS::TaskDefinition"
@@ -20,10 +32,10 @@ CloudFormation {
         Name: 'bitbucket',
         Memory: 2024,
         Cpu: 300,
-        Image: 'atlassian/bitbucket-server',
+        Image: Ref('ContainerImage'),
         PortMappings: [{
-          HostPort: 7999,
-          ContainerPort: 7999
+          HostPort: Ref('HostPort'),
+          ContainerPort: Ref('ContainerPort')
         }],
         Environment: [
           {

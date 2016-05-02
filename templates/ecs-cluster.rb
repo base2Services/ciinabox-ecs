@@ -177,7 +177,8 @@ CloudFormation {
       "chown -R 1000:1000 /data/jenkins\n",
       "ifconfig eth0 mtu 1500\n",
       "stop ecs\n",
-      "service docker restart\n",
+      "service docker stop\n",
+      "service docker start\n",
       "start ecs\n",
       "docker run --name jenkins-docker-slave --privileged=true -d -e PORT=4444 -p 4444:4444 -p 2223:22 -v /data/jenkins-dind/:/var/lib/docker base2/ciinabox-dind-slave\n",
       "echo 'done!!!!'\n"

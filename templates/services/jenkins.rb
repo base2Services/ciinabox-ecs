@@ -12,6 +12,19 @@ CloudFormation {
   Parameter("ECSCluster"){ Type 'String' }
   Parameter("ECSRole"){ Type 'String' }
   Parameter("ServiceELB"){ Type 'String' }
+  Parameter("ContainerImage") {
+    Type 'String'
+    Default 'base2/ciinabox-jenkins'
+  }
+  Parameter("HostPort") {
+    Type 'String'
+    Default '50000'
+  }
+  Parameter("ContainerPort") {
+    Type 'String'
+    Default '50000'
+  }
+
 
   Resource('JenkinsTask') {
     Type "AWS::ECS::TaskDefinition"
@@ -20,10 +33,10 @@ CloudFormation {
         Name: 'jenkins',
         Memory: 2024,
         Cpu: 300,
-        Image: 'base2/ciinabox-jenkins',
+        Image: Ref('ContainerImage'),
         PortMappings: [{
-          HostPort: 50000,
-          ContainerPort: 50000
+          HostPort: Ref('HostPort'),
+          ContainerPort: Ref('ContainerPort')
         }],
         Environment: [
           {
@@ -77,7 +90,7 @@ CloudFormation {
     Property('TaskDefinition', Ref('JenkinsTask'))
     Property('Role', Ref('ECSRole'))
     Property('LoadBalancers', [
-      { ContainerName: 'jenkins', ContainerPort: '50000', LoadBalancerName: Ref('ServiceELB') }
+      { ContainerName: 'jenkins', ContainerPort: Ref('ContainerPort'), LoadBalancerName: Ref('ServiceELB') }
     ])
   }
 }
