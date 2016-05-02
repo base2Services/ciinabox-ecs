@@ -233,19 +233,21 @@ CloudFormation {
 
   services.each do |name|
     name.each do |service_name, service|
-
+      params = {
+        ECSCluster: Ref('ECSCluster'),
+        ECSRole: Ref('ECSRole'),
+        ServiceELB: Ref('CiinaboxProxyELB')
+      }
+      params.merge!(ContainerImage: "#{service['ContainerImage']}") if service['ContainerImage']
+      params.merge!(HostPort: "#{service['LoadBalancerPort']}") if service['LoadBalancerPort']
+      params.merge!(ContainerPort: "#{service['InstancePort']}") if service['InstancePort']
       # ECS Task Def and Service  Stack
       Resource("#{service_name}Stack") {
         Type 'AWS::CloudFormation::Stack'
         Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/services/#{service_name}.json")
         Property('TimeoutInMinutes', 5)
-        Property('Parameters',{
-          ECSCluster: Ref('ECSCluster'),
-          ECSRole: Ref('ECSRole'),
-          ServiceELB: Ref('CiinaboxProxyELB')
-        })
+        Property('Parameters', params)
       }
-
     end
   end
 }
