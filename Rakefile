@@ -129,7 +129,7 @@ namespace :ciinabox do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['s3', 'ls', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"] )
     if status > 0
-      status, result = aws_execute( config, ['s3', 'mb', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"] )
+      status, result = aws_execute( config, ['s3', 'mb', "s3://#{config['source_bucket']}"] )
       puts result
       if status > 0
         puts "fail to create source bucket see error logs for details"
