@@ -6,8 +6,8 @@ and managing a bunch of CI tools in AWS using the Elastic Container Service (ECS
 Right Now ciinabox supports deploying:
 
  * jenkins
- * private docker registry
- * chef server
+ * bitbucket
+ * plus custom tasks and stacks
 
 ## Setup
 
