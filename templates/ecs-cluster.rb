@@ -150,7 +150,7 @@ CloudFormation {
     addTag("Name", "ciinabox-ecs-data-xx")
     addTag("Environment", 'ciinabox')
     addTag("EnvironmentType", 'ciinabox')
-    addTag("Role", "search")
+    addTag("Role", "ciinabox-data")
   }
 
   LaunchConfiguration( :LaunchConfig ) {
