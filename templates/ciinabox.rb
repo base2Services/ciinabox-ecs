@@ -86,6 +86,14 @@ CloudFormation do
         Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/#{file_name}.json")
         Property('Parameters', params)
       }
+
+      if details['outputs']
+        details['outputs'].each do |output|
+          Output(output) {
+            Value(FnGetAtt(stack, "Outputs.#{output}"))
+          }
+        end
+      end
     end
   end
 
