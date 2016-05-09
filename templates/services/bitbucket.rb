@@ -1,7 +1,20 @@
 require 'cfndsl'
+require_relative '../../ext/helper'
 
 if !defined? timezone
   timezone = 'GMT'
+end
+
+image = 'atlassian/bitbucket-server'
+memory = 2048
+cpu = 300
+container_port = 7999
+service = lookup_service('jenkins', services)
+if service
+  image = service['ContainerImage'] || 'atlassian/bitbucket-server'
+  memory = service['ContainerMemory'] || 2048
+  cpu = service['ContainerCPU'] || 300
+  container_port = service['InstancePort'] || 7999
 end
 
 CloudFormation {
@@ -12,30 +25,18 @@ CloudFormation {
   Parameter("ECSCluster"){ Type 'String' }
   Parameter("ECSRole"){ Type 'String' }
   Parameter("ServiceELB"){ Type 'String' }
-  Parameter("ContainerImage") {
-    Type 'String'
-    Default 'atlassian/bitbucket-server'
-  }
-  Parameter("HostPort") {
-    Type 'String'
-    Default '7999'
-  }
-  Parameter("ContainerPort") {
-    Type 'String'
-    Default '7999'
-  }
 
   Resource('BitbucketTask') {
     Type "AWS::ECS::TaskDefinition"
     Property('ContainerDefinitions', [
       {
         Name: 'bitbucket',
-        Memory: 2024,
-        Cpu: 300,
-        Image: Ref('ContainerImage'),
+        Memory: memory,
+        Cpu: cpu,
+        Image: image,
         PortMappings: [{
-          HostPort: Ref('HostPort'),
-          ContainerPort: Ref('ContainerPort')
+          HostPort: container_port,
+          ContainerPort: container_port
         }],
         Environment: [
           {

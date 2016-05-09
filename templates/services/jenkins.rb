@@ -1,7 +1,22 @@
 require 'cfndsl'
+require_relative '../../ext/helper'
 
 if !defined? timezone
   timezone = 'GMT'
+end
+
+image = 'base2/ciinabox-jenkins'
+jenkins_java_opts = ''
+memory = 2048
+cpu = 300
+container_port = 0
+service = lookup_service('jenkins', services)
+if service
+  jenkins_java_opts = service['JAVA_OPTS'] || ''
+  image = service['ContainerImage'] || 'base2/ciinabox-jenkins'
+  memory = service['ContainerMemory'] || 2048
+  cpu = service['ContainerCPU'] || 300
+  container_port = service['InstancePort'] || 0
 end
 
 CloudFormation {
@@ -12,36 +27,19 @@ CloudFormation {
   Parameter("ECSCluster"){ Type 'String' }
   Parameter("ECSRole"){ Type 'String' }
   Parameter("ServiceELB"){ Type 'String' }
-  Parameter("ContainerImage") {
-    Type 'String'
-    Default 'base2/ciinabox-jenkins'
-  }
-  Parameter("HostPort") {
-    Type 'String'
-    Default '50000'
-  }
-  Parameter("ContainerPort") {
-    Type 'String'
-    Default '50000'
-  }
-
 
   Resource('JenkinsTask') {
     Type "AWS::ECS::TaskDefinition"
     Property('ContainerDefinitions', [
       {
         Name: 'jenkins',
-        Memory: 2024,
-        Cpu: 300,
-        Image: Ref('ContainerImage'),
-        PortMappings: [{
-          HostPort: Ref('HostPort'),
-          ContainerPort: Ref('ContainerPort')
-        }],
+        Memory: memory,
+        Cpu: cpu,
+        Image: image,
         Environment: [
           {
             Name: 'JAVA_OPTS',
-            Value: "-Duser.timezone=#{timezone}"
+            Value: "#{jenkins_java_opts} -Duser.timezone=#{timezone}"
           },
           {
             Name: 'VIRTUAL_HOST',
@@ -88,9 +86,10 @@ CloudFormation {
     Property('Cluster', Ref('ECSCluster'))
     Property('DesiredCount', 1)
     Property('TaskDefinition', Ref('JenkinsTask'))
-    Property('Role', Ref('ECSRole'))
+    Property('Role', Ref('ECSRole')) unless container_port == 0
     Property('LoadBalancers', [
-      { ContainerName: 'jenkins', ContainerPort: Ref('ContainerPort'), LoadBalancerName: Ref('ServiceELB') }
-    ])
+      { ContainerName: 'jenkins', ContainerPort: container_port, LoadBalancerName: Ref('ServiceELB') }
+    ]) unless container_port == 0
+
   }
 }
