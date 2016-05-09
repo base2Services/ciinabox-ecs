@@ -18,3 +18,12 @@ def nat_scale_up_schedule(scale_up_schedule)
   end
   return "#{minute} #{hour} #{expr[2]} #{expr[3]} #{expr[4]}"
 end
+
+def lookup_service(name, services=[])
+  services.each do |service|
+    if service.has_key? name
+      return service[name]
+    end
+  end
+  nil
+end

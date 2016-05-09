@@ -4,7 +4,7 @@ CloudFormation {
 
   # Template metadata
   AWSTemplateFormatVersion "2010-09-09"
-  Description "ciinabox - ECS Service ELBs v#{ciinabox_version}"
+  Description "ciinabox - ECS Services v#{ciinabox_version}"
 
   # Parameters
   Parameter("ECSCluster"){ Type 'String' }
@@ -238,9 +238,6 @@ CloudFormation {
         ECSRole: Ref('ECSRole'),
         ServiceELB: Ref('CiinaboxProxyELB')
       }
-      params.merge!(ContainerImage: "#{service['ContainerImage']}") if service['ContainerImage']
-      params.merge!(HostPort: "#{service['LoadBalancerPort']}") if service['LoadBalancerPort']
-      params.merge!(ContainerPort: "#{service['InstancePort']}") if service['InstancePort']
       # ECS Task Def and Service  Stack
       Resource("#{service_name}Stack") {
         Type 'AWS::CloudFormation::Stack'
