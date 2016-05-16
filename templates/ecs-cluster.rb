@@ -97,6 +97,44 @@ CloudFormation {
         }
       },
       {
+        'PolicyName' => 'ssm-run-command',
+        'PolicyDocument' => {
+          'Statement' => [
+            {
+              'Effect' => 'Allow',
+              'Action' => [
+                "ssm:DescribeAssociation",
+                "ssm:GetDocument",
+                "ssm:ListAssociations",
+                "ssm:UpdateAssociationStatus",
+                "ssm:UpdateInstanceInformation",
+                "ec2messages:AcknowledgeMessage",
+                "ec2messages:DeleteMessage",
+                "ec2messages:FailMessage",
+                "ec2messages:GetEndpoint",
+                "ec2messages:GetMessages",
+                "ec2messages:SendReply",
+                "cloudwatch:PutMetricData",
+                "ec2:DescribeInstanceStatus",
+                "ds:CreateComputer",
+                "ds:DescribeDirectories",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents",
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:AbortMultipartUpload",
+                "s3:ListMultipartUploadParts",
+                "s3:ListBucketMultipartUploads"
+              ],
+              'Resource' => '*'
+            }
+          ]
+        }
+      },
+      {
         PolicyName: 'packer',
         PolicyDocument: {
           Statement: [
@@ -126,7 +164,7 @@ CloudFormation {
                 'ec2:RegisterImage',
                 'ec2:CreateTags',
                 'ec2:ModifyImageAttribute',
-		'ec2:GetPasswordData',
+		            'ec2:GetPasswordData',
                 'iam:PassRole'
               ],
               Resource: '*'
@@ -176,6 +214,8 @@ CloudFormation {
       "mkdir -p /data/jenkins\n",
       "chown -R 1000:1000 /data/jenkins\n",
       "ifconfig eth0 mtu 1500\n",
+      "curl https://amazon-ssm-", Ref("AWS::Region"),".s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o /tmp/amazon-ssm-agent.rpm\n",
+      "yum install -y /tmp/amazon-ssm-agent.rpm\n",
       "stop ecs\n",
       "service docker stop\n",
       "service docker start\n",
