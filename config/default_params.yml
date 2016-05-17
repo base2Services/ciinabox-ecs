@@ -51,6 +51,8 @@ natAMI:
     ami: ami-48d38c2b
   eu-west-1:
     ami: ami-bff32ccc
+  ap-southeast-1:
+    ami: ami-c9b572aa
 
 ecs_ami:
   us-east-1:
@@ -61,6 +63,8 @@ ecs_ami:
     ami: ami-b8cbe8db
   eu-west-1:
     ami: ami-9c9819ef
+  ap-southeast-1:
+    ami: ami-be63a9dd
 
 #Webhook access only via https
 webHooks:
