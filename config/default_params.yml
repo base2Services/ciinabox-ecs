@@ -10,7 +10,7 @@ log_level: :info
 timezone: GMT
 
 #change for internal ELBs
-#internal_elb: false
+internal_elb: false
 
 #AWS Availability Zones Idenifers
 availability_zones:
