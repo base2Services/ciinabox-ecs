@@ -177,7 +177,7 @@ CloudFormation {
     })
   }
 
-  if internal_elb
+  if defined? internal_elb and internal_elb
     Resource('CiinaboxProxyELBInternal') {
       Type 'AWS::ElasticLoadBalancing::LoadBalancer'
       Property('Listeners', elb_listners)
@@ -282,7 +282,7 @@ CloudFormation {
         ECSRole: Ref('ECSRole'),
         ServiceELB: Ref('CiinaboxProxyELB')
       }
-      params['InternalELB'] = Ref('CiinaboxProxyELBInternal') if internal_elb
+      params['InternalELB'] = Ref('CiinaboxProxyELBInternal') if defined? internal_elb and internal_elb
       # ECS Task Def and Service  Stack
       Resource("#{service_name}Stack") {
         Type 'AWS::CloudFormation::Stack'

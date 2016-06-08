@@ -5,6 +5,10 @@ if !defined? timezone
   timezone = 'GMT'
 end
 
+if !defined? internal_elb
+  internal_elb = nil
+end
+
 image = 'base2/ciinabox-jenkins'
 jenkins_java_opts = ''
 memory = 2048
