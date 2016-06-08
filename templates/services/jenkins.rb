@@ -21,13 +21,14 @@ if service
   cpu = service['ContainerCPU'] || 300
 
   if service['InstancePort']
+    port_mappings << {
+      HostPort: service['InstancePort'],
+      ContainerPort: service['InstancePort']
+    }
     container_port = service['InstancePort']
     virtual_host = "jenkins.#{dns_domain},internal-jenkins.#{dns_domain}"
-    port_mappings = [{
-          HostPort: 50000,
-          ContainerPort: 50000
-        }]
   end
+
 end
 
 CloudFormation {
