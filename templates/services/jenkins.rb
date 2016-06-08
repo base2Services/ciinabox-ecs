@@ -5,18 +5,34 @@ if !defined? timezone
   timezone = 'GMT'
 end
 
+if !defined? internal_elb
+  internal_elb = nil
+end
+
 image = 'base2/ciinabox-jenkins'
 jenkins_java_opts = ''
 memory = 2048
 cpu = 300
 container_port = 0
 service = lookup_service('jenkins', services)
+virtual_host = "jenkins.#{dns_domain}"
+port_mappings = []
+
 if service
   jenkins_java_opts = service['JAVA_OPTS'] || ''
   image = service['ContainerImage'] || 'base2/ciinabox-jenkins'
   memory = service['ContainerMemory'] || 2048
   cpu = service['ContainerCPU'] || 300
-  container_port = service['InstancePort'] || 0
+
+  if service['InstancePort']
+    port_mappings << {
+      HostPort: service['InstancePort'],
+      ContainerPort: service['InstancePort']
+    }
+    container_port = service['InstancePort']
+    virtual_host = "jenkins.#{dns_domain},internal-jenkins.#{dns_domain}"
+  end
+
 end
 
 CloudFormation {
@@ -27,6 +43,7 @@ CloudFormation {
   Parameter("ECSCluster"){ Type 'String' }
   Parameter("ECSRole"){ Type 'String' }
   Parameter("ServiceELB"){ Type 'String' }
+  Parameter('InternalELB'){ Type 'String'} if internal_elb
 
   Resource('JenkinsTask') {
     Type "AWS::ECS::TaskDefinition"
@@ -36,6 +53,7 @@ CloudFormation {
         Memory: memory,
         Cpu: cpu,
         Image: image,
+        PortMappings: port_mappings,
         Environment: [
           {
             Name: 'JAVA_OPTS',
@@ -43,7 +61,7 @@ CloudFormation {
           },
           {
             Name: 'VIRTUAL_HOST',
-            Value: "jenkins.#{dns_domain}"
+            Value: virtual_host
           },
           {
             Name: 'VIRTUAL_PORT',
@@ -86,10 +104,11 @@ CloudFormation {
     Property('Cluster', Ref('ECSCluster'))
     Property('DesiredCount', 1)
     Property('TaskDefinition', Ref('JenkinsTask'))
-    Property('Role', Ref('ECSRole')) unless container_port == 0
+    #For Role... Conditional. This parameter is required only if you specify the LoadBalancers property.
+    Property('Role', Ref('ECSRole')) if internal_elb and container_port != 0
     Property('LoadBalancers', [
-      { ContainerName: 'jenkins', ContainerPort: container_port, LoadBalancerName: Ref('ServiceELB') }
-    ]) unless container_port == 0
+      { ContainerName: 'jenkins', ContainerPort: container_port, LoadBalancerName: Ref('InternalELB') }
+    ]) if internal_elb and container_port != 0
 
   }
 }
