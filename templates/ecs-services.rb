@@ -177,6 +177,50 @@ CloudFormation {
     })
   }
 
+  if internal_elb
+    Resource('CiinaboxProxyELBInternal') {
+      Type 'AWS::ElasticLoadBalancing::LoadBalancer'
+      Property('Listeners', elb_listners)
+      Property('Scheme', 'internal')
+      Property('HealthCheck', {
+        Target: "TCP:8080",
+        HealthyThreshold: '3',
+        UnhealthyThreshold: '2',
+        Interval: '15',
+        Timeout: '5'
+      })
+      Property('CrossZone',true)
+      Property('SecurityGroups',[
+        Ref('SecurityGroupBackplane'),
+        Ref('SecurityGroupOps'),
+        Ref('SecurityGroupDev'),
+        Ref('SecurityGroupWebHooks')
+      ])
+      Property('Subnets',[
+        Ref('ECSSubnetPrivateA'),Ref('ECSSubnetPrivateB')
+      ])
+    }
+
+    services.each do |service|
+        #Services look like this:
+        #[
+        # {\"jenkins\"=>{\"LoadBalancerPort\"=>50000, \"InstancePort\"=>50000, \"Protocol\"=>\"TCP\"}}",
+        # {\"bitbucket\"=>{\"LoadBalancerPort\"=>22, \"InstancePort\"=>7999, \"Protocol\"=>\"TCP\"}}"
+        #]
+        name, details = service.first
+        Resource("CiinaboxProxyDNSInternal") {
+          Type 'AWS::Route53::RecordSet'
+          Property('HostedZoneName', FnJoin('', [ dns_domain, '.']))
+          Property('Name', FnJoin('', ["internal-#{name}.", dns_domain, '.']))
+          Property('Type','A')
+          Property('AliasTarget', {
+            'DNSName' => FnGetAtt('CiinaboxProxyELBInternal','DNSName'),
+            'HostedZoneId' => FnGetAtt('CiinaboxProxyELB','CanonicalHostedZoneNameID')
+          })
+        }
+    end
+  end
+
   Resource('ProxyTask') {
     Type "AWS::ECS::TaskDefinition"
     Property('ContainerDefinitions', [
@@ -238,6 +282,7 @@ CloudFormation {
         ECSRole: Ref('ECSRole'),
         ServiceELB: Ref('CiinaboxProxyELB')
       }
+      params['InternalELB'] = Ref('CiinaboxProxyELBInternal') if internal_elb
       # ECS Task Def and Service  Stack
       Resource("#{service_name}Stack") {
         Type 'AWS::CloudFormation::Stack'

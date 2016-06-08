@@ -9,6 +9,9 @@ log_level: :info
 #change this to your own timezone
 timezone: GMT
 
+#change for internal ELBs
+internal_elb: false
+
 #AWS Availability Zones Idenifers
 availability_zones:
   - 'A'
