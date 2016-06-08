@@ -2,6 +2,12 @@
 
 services:
   - jenkins:
-      LoadBalancerPort: 50000
-      InstancePort: 50000
-      Protocol: TCP
+      # Optional Jenkins Service Parameters
+      # ContainerImage: base2/ciinabox-jenkins:2.0
+      # ContainerMemory: 4096
+      # ContainerCPU: 300
+      # JAVA_OPTS: -Xmx4096m
+      # you only need to add these ports for JNLP slaves
+      # LoadBalancerPort: 50000
+      # InstancePort: 50000
+      # Protocol: TCP
