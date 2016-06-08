@@ -197,6 +197,16 @@ CloudFormation {
     KeyName FnFindInMap('EnvironmentType','ciinabox','KeyName')
     SecurityGroups [ Ref('SecurityGroupBackplane') ]
     InstanceType FnFindInMap('EnvironmentType','ciinabox','ECSInstanceType')
+    if defined? ecs_docker_volume_size and ecs_docker_volume_size > 22
+      Property("BlockDeviceMappings", [
+        {
+          "DeviceName" => "/dev/xvdcz",
+          "Ebs" => {
+            "VolumeSize" => ecs_docker_volume_size,
+            "VolumeType" => "gp2"
+          }
+        }])
+    end
     UserData FnBase64(FnJoin("",[
       "#!/bin/bash\n",
       "echo ECS_CLUSTER=", Ref('ECSCluster'), " >> /etc/ecs/ecs.config\n",
