@@ -5,8 +5,10 @@ and managing a bunch of CI tools in AWS using the Elastic Container Service (ECS
 
 Right Now ciinabox supports deploying:
 
- * jenkins
- * bitbucket
+ * [jenkins](https://jenkins.io/)
+ * [bitbucket](https://www.atlassian.com/software/bitbucket)
+ * [hawtio](http://hawt.io/)
+ * [nexus](http://www.sonatype.org/nexus/)
  * plus custom tasks and stacks
 
 ## Setup
@@ -38,13 +40,12 @@ e.g:
 ---
 services:
   - jenkins:
-      LoadBalancerPort: 50000
-      InstancePort: 50000
-      Protocol: TCP
   - bitbucket:
       LoadBalancerPort: 22
       InstancePort: 7999
       Protocol: TCP
+  - hawtio:
+  - nexus:
 ```
 
 Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
