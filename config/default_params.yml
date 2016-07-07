@@ -62,15 +62,15 @@ natAMI:
 
 ecs_ami:
   us-east-1:
-    ami: ami-67a3a90d
+    ami: ami-a88a46c5
   us-west-2:
-    ami: ami-c7a451a7
+    ami: ami-ae0acdce
   ap-southeast-2:
-    ami: ami-b8cbe8db
+    ami: ami-0bf2da68
   eu-west-1:
-    ami: ami-9c9819ef
+    ami: ami-ccd942bf
   ap-southeast-1:
-    ami: ami-be63a9dd
+    ami: ami-24c71547
 
 #Webhook access only via https
 webHooks:
