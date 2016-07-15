@@ -48,6 +48,18 @@ CloudFormation {
     Property('Path','/')
     Property('Policies', [
       {
+        PolicyName: 'assume-role',
+        PolicyDocument: {
+          Statement: [
+            {
+              Effect: 'Allow',
+              Action: [ 'sts:AssumeRole' ],
+              Resource: '*'
+            }
+          ]
+        }
+      },
+      {
         PolicyName: 'read-only',
         PolicyDocument: {
           Statement: [
