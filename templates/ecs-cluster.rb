@@ -196,6 +196,9 @@ CloudFormation {
     DeletionPolicy 'Snapshot'
     Size '100'
     VolumeType 'gp2'
+    if defined? ecs_data_volume_snapshot
+      SnapshotId ecs_data_volume_snapshot
+    end
     AvailabilityZone FnSelect(0, FnGetAZs(""))
     addTag("Name", "ciinabox-ecs-data-xx")
     addTag("Environment", 'ciinabox')
