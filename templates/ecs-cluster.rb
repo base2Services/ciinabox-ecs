@@ -1,5 +1,10 @@
 require 'cfndsl'
 
+volume_name = "ECSDataVolume"
+if defined? ecs_data_volume_name
+  volume_name = ecs_data_volume_name
+end
+
 CloudFormation {
 
   # Template metadata
@@ -192,7 +197,7 @@ CloudFormation {
     Roles [ Ref('Role') ]
   }
 
-  Volume("ECSDataVolume") {
+  Volume(volume_name) {
     DeletionPolicy 'Snapshot'
     Size '100'
     VolumeType 'gp2'
@@ -229,7 +234,7 @@ CloudFormation {
       "PRIVATE_IP=`/opt/aws/bin/ec2-metadata -o | cut -f2 -d: | cut -f2 -d-`\n",
       "yum install -y python-pip\n",
       "python-pip install --upgrade awscli\n",
-      "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref('ECSDataVolume'), " --instance-id i-${INSTANCE_ID} --device /dev/sdf\n",
+      "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref(volume_name), " --instance-id i-${INSTANCE_ID} --device /dev/sdf\n",
       "echo 'waiting for ECS Data volume to attach' && sleep 20\n",
       "echo '/dev/xvdf   /data        ext4    defaults,nofail 0   2' >> /etc/fstab\n",
       "mkdir -p /data\n",
