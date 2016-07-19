@@ -14,6 +14,21 @@ aws_account_id: 198712987398
 #override S3 bucket location
 source_bucket: source.aws.example.com
 
+#add if you want ecs docker volume != 22GB - must be > 22
+#ecs_docker_volume_size: 100
+
+#use this to change volume snapshot for running ciinabox
+#ecs_data_volume_name: "ECSDataVolume2s"
+
+#set the snapshot to restore from
+#ecs_data_volume_snapshot: snap-49e2b3b5
+
+#optional ciinabox name if you need more than one or you want a different name
+#stack_name: ciinabox-tools
+
+#for internal elb for jenkins
+#internal_elb: false
+
 #ciinabox ECS cluster name
 cluster_name: ciinabox
 

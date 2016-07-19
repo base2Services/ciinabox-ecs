@@ -234,3 +234,29 @@ Parameters get passed in as a hash and all get passed in from the top level.
 ecs_data_volume_snapshot: (Note: if ciinabox exists this is two step approach you will need to change volume name and change back volume name)
 
 ecs_data_volume_name: override this if you need to re-generate the volume, e.g. from snapshot
+
+\#add if you want ecs docker volume != 22GB - must be > 22
+
+\#ecs_docker_volume_size: 100
+
+\#use this to change volume snapshot for running ciinabox
+
+\#ecs_data_volume_name: "ECSDataVolume2s"
+
+\#set the snapshot to restore from
+
+\#ecs_data_volume_snapshot: snap-49e2b3b5
+
+\#optional ciinabox name if you need more than one or you want a different name
+
+\#stack_name: ciinabox-tools
+
+\#for internal elb for jenkins
+
+\#internal_elb: false
+
+\# - jenkins:
+\#    LoadBalancerPort: 50000
+\#    InstancePort: 50000
+\#    Protocol: TCP
+\# needs internal_elb: true

@@ -11,3 +11,12 @@ services:
       # LoadBalancerPort: 50000
       # InstancePort: 50000
       # Protocol: TCP
+
+
+#example for Internal Port for Jenkins
+# - jenkins:
+#    LoadBalancerPort: 50000
+#    InstancePort: 50000
+#    Protocol: TCP
+# needs internal_elb: true
+# will trigger this 2nd hostname for jenkins internal-jenkins.#{dns_domain}
