@@ -225,4 +225,12 @@ Parameters get passed in as a hash and all get passed in from the top level.
 \#    file_name: elk
 \#    parameters:
 \#      RoleName: search
-\#      CertName: x  
+\#      CertName: x
+
+# Extra configs
+
+## To restore the volume from a snapshot in an existing ciinabox update the following 2 values
+
+ecs_data_volume_snapshot: (Note: if ciinabox exists this is two step approach you will need to change volume name and change back volume name)
+
+ecs_data_volume_name: override this if you need to re-generate the volume, e.g. from snapshot
