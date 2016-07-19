@@ -21,6 +21,9 @@ namespace :ciinabox do
   else
     config = default_params
   end
+  puts config
+
+  stack_name = config["stack_name"] || "ciinabox"
 
   #if {ciinaboxes_dir}/#{ciinabox_name}/templates
   #render and add to templates
@@ -110,7 +113,7 @@ namespace :ciinabox do
   desc('Current status of the active ciinabox')
   task :status do
     check_active_ciinabox(config)
-    status, result = aws_execute( config, ['cloudformation', 'describe-stacks', "--stack-name ciinabox", '--query "Stacks[0].StackStatus"', '--out text'] )
+    status, result = aws_execute( config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'] )
     if status > 0
       puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
       exit 1
@@ -218,7 +221,7 @@ namespace :ciinabox do
   task :create do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['cloudformation', 'create-stack',
-      '--stack-name ciinabox',
+      "--stack-name #{stack_name}",
       "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
       '--capabilities CAPABILITY_IAM'
     ])
@@ -235,7 +238,7 @@ namespace :ciinabox do
   task :update do
     check_active_ciinabox(config)
     status, result = aws_execute( config, ['cloudformation', 'update-stack',
-      '--stack-name ciinabox',
+      "--stack-name #{stack_name}",
       "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
       '--capabilities CAPABILITY_IAM'
     ])
@@ -268,7 +271,7 @@ namespace :ciinabox do
     STDOUT.puts "Are you sure you want to tear down the #{config['ciinabox_name']} ciinabox? (y/n)"
     input = STDIN.gets.strip
     if input == 'y'
-      status, result = aws_execute( config, ['cloudformation', 'delete-stack', '--stack-name ciinabox'] )
+      status, result = aws_execute( config, ['cloudformation', 'delete-stack', "--stack-name #{stack_name}"] )
       puts result
       if status > 0
         puts "fail to tear down ciinabox environment"
