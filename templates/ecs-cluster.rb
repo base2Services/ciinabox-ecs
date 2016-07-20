@@ -152,6 +152,21 @@ CloudFormation {
         }
       },
       {
+        PolicyName: 'ecr',
+        PolicyDocument: {
+          Statement: [
+            {
+              Effect: 'Allow',
+              Action: [
+                'ecr:*'
+              ],
+              Resource: '*'
+
+            }
+          ]
+        }
+      },
+      {
         PolicyName: 'packer',
         PolicyDocument: {
           Statement: [
