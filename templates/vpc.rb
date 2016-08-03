@@ -110,16 +110,21 @@ CloudFormation {
 
   # Name => RuleNumber, Protocol, RuleAction, Egress, CidrBlock, PortRange From, PortRange To
   acls = {
-    InboundHTTPPublicNetworkAclEntry:       ['100','6','allow','false','0.0.0.0/0','80','80'],
-    InboundHTTPSPublicNetworkAclEntry:      ['101','6','allow','false','0.0.0.0/0','443','443'],
-    InboundSSHPublicNetworkAclEntry:        ['102','6','allow','false','0.0.0.0/0','22','22'],
-    InboundEphemeralPublicNetworkAclEntry:  ['103','6','allow','false','0.0.0.0/0','1024','65535'],
-    OutboundNetworkAclEntry:                ['104','-1','allow','true','0.0.0.0/0','0','65535']
+    # Inbound
+    InboundTCPEphemeralPublicNetworkAclEntry: ['1001','6','allow','false','0.0.0.0/0','1024','65535'],
+    InboundUDPEphemeralPublicNetworkAclEntry: ['1002','17','allow','false','0.0.0.0/0','1024','65535'],
+    InboundSSHPublicNetworkAclEntry:          ['1003','6','allow','false','0.0.0.0/0','22','22'],
+    InboundHTTPPublicNetworkAclEntry:         ['1004','6','allow','false','0.0.0.0/0','80','80'],
+    InboundHTTPSPublicNetworkAclEntry:        ['1005','6','allow','false','0.0.0.0/0','443','443'],
+    InboundNTPPublicNetworkAclEntry:          ['1006','17','allow','false','0.0.0.0/0','123','123'],
+    
+    # Outbound
+    OutboundNetworkAclEntry:                  ['1001','-1','allow','true','0.0.0.0/0','0','65535']
   }
 
   # merges acls defined in config with acls in vpc template incrementing the RuleNumber by 1
   if defined? customAcl
-    rule_number = acls.length + 99
+    rule_number = 2000
     customAcl.each do |acl|
       rule_number += 1
       acls.merge!((acl['Egress'] ? 'Outbound' : 'Inbound') + acl['Name'] + 'PublicNetworkAclEntry' =>
