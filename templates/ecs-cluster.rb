@@ -212,9 +212,13 @@ CloudFormation {
     Roles [ Ref('Role') ]
   }
 
+  unless defined? ecs_data_volume_size
+    ecs_data_volume_size = 100
+  end
+
   Volume(volume_name) {
     DeletionPolicy 'Snapshot'
-    Size '100'
+    Size ecs_data_volume_size
     VolumeType 'gp2'
     if defined? ecs_data_volume_snapshot
       SnapshotId ecs_data_volume_snapshot

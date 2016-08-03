@@ -18,6 +18,9 @@ internal_elb: false
 #use this to change volume snapshot for running ciinabox
 #ecs_data_volume_name: "ECSDataVolume2s"
 
+#to scale data volume (will need to be creating a new one by changing the name and using snapshot if not boostrapping with this)
+#ecs_data_volume_size = 100
+
 #set the snapshot to restore from
 #ecs_data_volume_snapshot: snap-49e2b3b5
 
