@@ -21,7 +21,8 @@ namespace :ciinabox do
   else
     config = default_params
   end
-  puts config
+  
+  puts config if ENV['DEBUG_CFN'] == 'true'
 
   stack_name = config["stack_name"] || "ciinabox"
 

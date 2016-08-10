@@ -36,6 +36,9 @@ default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificat
 #set the snapshot to restore from
 #ecs_data_volume_snapshot: snap-49e2b3b5
 
+#to scale data volume (will need to be creating a new one by changing the name and using snapshot if not boostrapping with this)
+#ecs_data_volume_size = 100
+
 #optional ciinabox name if you need more than one or you want a different name
 #stack_name: ciinabox-tools
 
