@@ -20,6 +20,9 @@ source_bucket: source.aws.example.com
 #use this to change volume snapshot for running ciinabox
 #ecs_data_volume_name: "ECSDataVolume2s"
 
+#set the size of the ecs data volume -- NOTE: would take a new volume - i.e. change volume name
+#ecs_data_volume_size: 250
+
 #set the snapshot to restore from
 #ecs_data_volume_snapshot: snap-49e2b3b5
 
