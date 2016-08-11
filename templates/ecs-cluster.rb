@@ -224,6 +224,7 @@ CloudFormation {
     addTag("Environment", 'ciinabox')
     addTag("EnvironmentType", 'ciinabox')
     addTag("Role", "ciinabox-data")
+    addTag("MakeSnapshot", "true")
   }
 
   LaunchConfiguration( :LaunchConfig ) {
