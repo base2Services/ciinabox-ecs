@@ -21,6 +21,9 @@ internal_elb: false
 #set the snapshot to restore from
 #ecs_data_volume_snapshot: snap-49e2b3b5
 
+#set the size of the ecs data volume -- NOTE: would take a new volume - i.e. change volume name
+#ecs_data_volume_size: 250
+
 #optional ciinabox name if you need more than one or you want a different name
 #stack_name: ciinabox-tools
 

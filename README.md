@@ -247,16 +247,22 @@ ecs_data_volume_name: override this if you need to re-generate the volume, e.g. 
 
 \#ecs_data_volume_snapshot: snap-49e2b3b5
 
+\#set the size of the ecs data volume -- NOTE: would take a new volume - i.e. change volume name
+
+\#ecs_data_volume_size: 250
+
 \#optional ciinabox name if you need more than one or you want a different name
 
 \#stack_name: ciinabox-tools
 
-\#for internal elb for jenkins
+## For internal elb for jenkins
 
-\#internal_elb: false
+```
+internal_elb: false
 
-\# - jenkins:
-\#    LoadBalancerPort: 50000
-\#    InstancePort: 50000
-\#    Protocol: TCP
-\# needs internal_elb: true
+ - jenkins:
+    LoadBalancerPort: 50000
+    InstancePort: 50000
+    Protocol: TCP
+# needs internal_elb: true
+```

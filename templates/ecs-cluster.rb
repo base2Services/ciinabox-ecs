@@ -5,6 +5,11 @@ if defined? ecs_data_volume_name
   volume_name = ecs_data_volume_name
 end
 
+volume_size = 100
+if defined? ecs_data_volume_size
+  volume_size = ecs_data_volume_size
+end
+
 CloudFormation {
 
   # Template metadata
@@ -214,7 +219,7 @@ CloudFormation {
 
   Volume(volume_name) {
     DeletionPolicy 'Snapshot'
-    Size '100'
+    Size volume_size
     VolumeType 'gp2'
     if defined? ecs_data_volume_snapshot
       SnapshotId ecs_data_volume_snapshot
@@ -224,6 +229,7 @@ CloudFormation {
     addTag("Environment", 'ciinabox')
     addTag("EnvironmentType", 'ciinabox')
     addTag("Role", "ciinabox-data")
+    addTag("MakeSnapshot", "true")
   }
 
   LaunchConfiguration( :LaunchConfig ) {

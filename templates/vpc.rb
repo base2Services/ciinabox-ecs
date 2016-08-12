@@ -17,6 +17,7 @@ CloudFormation {
     Property('CidrBlock', FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/", FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ))
     Property('EnableDnsSupport', true)
     Property('EnableDnsHostnames', true)
+    Property('Tags',[ {Key: 'Name', Value: stack_name }])
   }
 
   Resource("DHCPOptionSet") {
@@ -117,7 +118,7 @@ CloudFormation {
     InboundHTTPPublicNetworkAclEntry:         ['1004','6','allow','false','0.0.0.0/0','80','80'],
     InboundHTTPSPublicNetworkAclEntry:        ['1005','6','allow','false','0.0.0.0/0','443','443'],
     InboundNTPPublicNetworkAclEntry:          ['1006','17','allow','false','0.0.0.0/0','123','123'],
-    
+
     # Outbound
     OutboundNetworkAclEntry:                  ['1001','-1','allow','true','0.0.0.0/0','0','65535']
   }
