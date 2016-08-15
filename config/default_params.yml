@@ -3,6 +3,9 @@ ciinabox_version: 0.1
 #ciinabox ECS cluster name
 cluster_name: ciinabox
 
+#you may want a different ciinabox-stack name, e.g if you have 2 ciinaboxes
+stack_name: ciinabox
+
 #log level - change to :debug to see the AWS commands being executed
 log_level: :info
 
