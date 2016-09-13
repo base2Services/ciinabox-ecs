@@ -261,9 +261,8 @@ CloudFormation {
       "mkdir -p /data\n",
       "mount /data && echo \"ECS Data volume already formatted\" || mkfs -t ext4 /dev/xvdf\n",
       "mount -a && echo 'mounting ECS Data volume' || echo 'failed to mount ECS Data volume'\n",
-      "chmod -R 777 /data\n",
-      "mkdir -p /data/jenkins\n",
-      "chown -R 1000:1000 /data/jenkins\n",
+      "export BOOTSTRAP=/data/bootstrap \n",
+      "if [ ! -e \"$BOOTSTRAP\" ]; then echo \"boostrapping\"; chmod -R 777 /data; mkdir -p /data/jenkins; chown -R 1000:1000 /data/jenkins;  touch $BOOTSTRAP; fi \n"
       "ifconfig eth0 mtu 1500\n",
       "curl https://amazon-ssm-", Ref("AWS::Region"),".s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o /tmp/amazon-ssm-agent.rpm\n",
       "yum install -y /tmp/amazon-ssm-agent.rpm\n",
