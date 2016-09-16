@@ -42,6 +42,8 @@ log_level: :info
 #domain needs to be manage via route53 since the cloudformation adds additional records
 dns_domain: tools.aws.example.com
 
+#icinga2_image: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION/base2/icinga2:VERSION_TAG
+
 #AWS Availability Zones Idenifers
 availability_zones:
   - 'A'

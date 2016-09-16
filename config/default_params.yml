@@ -33,6 +33,8 @@ internal_elb: false
 #for internal elb for jenkins
 #internal_elb: false
 
+#icinga2_image: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION/base2/icinga2:VERSION_TAG
+
 #AWS Availability Zones Idenifers
 availability_zones:
   - 'A'
