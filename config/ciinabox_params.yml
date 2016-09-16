@@ -45,6 +45,8 @@ default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificat
 #for internal elb for jenkins
 #internal_elb: false
 
+#icinga2_image: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION/base2/icinga2:VERSION_TAG
+
 # Uncomment below to enable ciinabox environment scheduling
 # times are in UTC
 # scale_up_schedule: 0 7 * * 1-5
