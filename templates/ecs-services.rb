@@ -52,6 +52,7 @@ CloudFormation {
           ]
         }
       },
+      #http://docs.aws.amazon.com/AmazonECS/latest/developerguide/instance_IAM_role.html
       {
         PolicyName: 'ecsServiceRole',
         PolicyDocument: {
@@ -70,7 +71,13 @@ CloudFormation {
                 "ec2:Describe*",
                 "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
                 "elasticloadbalancing:Describe*",
-                "elasticloadbalancing:RegisterInstancesWithLoadBalancer"
+                "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
               ],
               Resource: '*'
             }
