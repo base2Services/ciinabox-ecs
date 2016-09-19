@@ -6,7 +6,11 @@ if !defined? timezone
 end
 
 #icinga2_image: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION/base2/icinga2:VERSION_TAG
-image = icinga2_image
+image = "icinga/icinga2" #fail safe so file compiles
+
+if defined? icinga2_image
+  image = icinga2_image
+end
 
 memory = 1024
 cpu = 300
