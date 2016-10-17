@@ -35,10 +35,8 @@ internal_elb: false
 
 #icinga2_image: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION/base2/icinga2:VERSION_TAG
 
-#AWS Availability Zones Idenifers
-availability_zones:
-  - 'A'
-  - 'B'
+#Maximum number of availability zones per region
+maximum_availability_zones: 5
 
 azId:
   A: 0

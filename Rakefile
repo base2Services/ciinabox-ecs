@@ -4,25 +4,57 @@ require 'yaml'
 require 'erb'
 require 'fileutils'
 require "net/http"
+require "aws-sdk"
+
+# Sets ruby AWS SDK client to use named profile
+def load_awssdk_credentials(aws_profile)
+
+  if not aws_profile.nil?
+    Aws.config[:credentials] = Aws::SharedCredentials.new(profile_name: aws_profile)
+  end
+end
+
+# Loads configuration from default params and merges
+# per-ciinabox defined parameters
+def load_yaml_config(ciinabox_name, ciinaboxes_dir)
+  default_params  = YAML.load(File.read("config/default_params.yml")) if File.exist?("config/default_params.yml")
+  config = default_params
+
+  #Merge ciinabox defined parameters
+  config_file_names = ['params.yml', 'aws_az_map.yml']
+
+  config_file_names.each do |config_file_name|
+    if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/#{config_file_name}")
+      user_params = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/#{config_file_name}"))
+      config = config.merge(user_params)
+    end
+  end
+  return  config
+end
+
+# Prompts user for Yes/No answer on standard input
+def prompt_yes_no(message)
+  answer = nil
+  while answer.nil?
+    tmp_answer = get_input(message + ' (y/n)')
+    if(tmp_answer.downcase == 'y' || tmp_answer == 'n')
+      answer = tmp_answer == 'y'
+    end
+  end
+  return answer
+end
 
 namespace :ciinabox do
 
-  #load config
+  #Load config
   templates = Dir["templates/**/*.rb"]
   ciinaboxes_dir = ENV['CIINABOXES_DIR'] || 'ciinaboxes'
   ciinabox_name = ENV['CIINABOX'] || ''
 
   #Load and merge standard ciinabox-provided parameters
-  ciinabox_params = YAML.load(File.read("config/ciinabox_params.yml")) if File.exist?("config/ciinabox_params.yml")
-  default_params = YAML.load(File.read("config/default_params.yml")) if File.exist?("config/default_params.yml")
-  if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
-    user_params = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml"))
-    config = default_params.merge(user_params)
-  else
-    config = default_params
-  end
+  config = load_yaml_config(ciinabox_name, ciinaboxes_dir)
 
-  puts config if ENV['DEBUG'] 
+  puts config if ENV['DEBUG']
 
   stack_name = config["stack_name"] || "ciinabox"
 
@@ -39,19 +71,19 @@ namespace :ciinabox do
     filename = "#{template}"
     output = template.sub! /.*templates\//, ''
     output = output.sub! '.rb', '.json'
-    files << { filename: filename, output: "output/#{output}" }
+    files << {filename: filename, output: "output/#{output}"}
   end
 
   CfnDsl::RakeTask.new do |t|
     t.cfndsl_opts = {
-      verbose: true,
-      files: files,
-      extras: [
-        [ :yaml, "config/default_params.yml" ],
-        [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml" ],
-        [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml" ],
-        [ :ruby, 'ext/helper.rb']
-      ]
+        verbose: true,
+        files: files,
+        extras: [
+            [:yaml, "config/default_params.yml"],
+            [:yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml"],
+            [:yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml"],
+            [:ruby, 'ext/helper.rb']
+        ]
     }
   end
 
@@ -62,6 +94,11 @@ namespace :ciinabox do
     ciinabox_region = get_input("Enter the AWS region to create your ciinabox (e.g: ap-southeast-2):")
     ciinabox_source_bucket = get_input("Enter the name of the S3 bucket to deploy ciinabox to:")
     ciinabox_tools_domain = get_input("Enter top level domain (e.g tools.example.com), must exist in Route53 in the same AWS account:")
+    aws_profile = get_input("Enter aws profile to use for this ciinabox (#{ciinabox_name}):")
+    if aws_profile.empty?
+      aws_profile = ciinabox_name
+    end
+
     if ciinabox_name == ''
       puts 'You must enter a name for your ciinabox'
       exit 1
@@ -72,10 +109,10 @@ namespace :ciinabox do
     #Settings preference - 1) User-input 2) User-provided params.yml 3) Default template
 
     ciinabox_params = File.read("config/ciinabox_params.yml")
-    input_result =  ERB.new(ciinabox_params).result(binding)
+    input_result = ERB.new(ciinabox_params).result(binding)
     input_hash = YAML.load(input_result) #Converts user input to hash
     if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
-      config_output = user_params.merge(input_hash)  #Merges input hash into user-provided template
+      config_output = user_params.merge(input_hash) #Merges input hash into user-provided template
       config_yaml = config_output.to_yaml #Convert output to YAML for writing
       File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml", 'w') { |f| f.write(config_yaml) }
     else
@@ -102,6 +139,12 @@ namespace :ciinabox do
       File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml", 'w') { |f| f.write(yml_default_services) }
     end
 
+    #Set AWS SDK credentials from configured profile, since we are about to
+    #generate AZ mapping file, which is account dependant
+    if prompt_yes_no("Do you want to generate AZs mapping file?")
+      Rake::Task['ciinabox:map_availability_zones'].invoke
+    end
+
     display_active_ciinabox ciinaboxes_dir, ciinabox_name
   end
 
@@ -114,7 +157,7 @@ namespace :ciinabox do
   desc('Current status of the active ciinabox')
   task :status do
     check_active_ciinabox(config)
-    status, result = aws_execute( config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'] )
+    status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
     if status > 0
       puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
       exit 1
@@ -131,9 +174,9 @@ namespace :ciinabox do
   desc('Creates the source bucket for deploying ciinabox')
   task :create_source_bucket do
     check_active_ciinabox(config)
-    status, result = aws_execute( config, ['s3', 'ls', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"] )
+    status, result = aws_execute(config, ['s3', 'ls', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"])
     if status > 0
-      status, result = aws_execute( config, ['s3', 'mb', "s3://#{config['source_bucket']}"] )
+      status, result = aws_execute(config, ['s3', 'mb', "s3://#{config['source_bucket']}"])
       puts result
       if status > 0
         puts "fail to create source bucket see error logs for details"
@@ -162,16 +205,16 @@ namespace :ciinabox do
   end
 
   desc('Uploads SSL server certs for ciinabox')
-  task :upload_server_cert  do
+  task :upload_server_cert do
     check_active_ciinabox(config)
     ciinabox_name = config['ciinabox_name']
     cert_dir = "#{ciinaboxes_dir}/#{ciinabox_name}"
-    status, result = aws_execute( config, [
-      'iam', 'upload-server-certificate',
-      '--server-certificate-name ciinabox',
-      "--certificate-body file://#{cert_dir}/ssl/ciinabox.crt",
-      "--private-key file://#{cert_dir}/ssl/ciinabox.key",
-      "--certificate-chain file://#{cert_dir}/ssl/ciinabox.crt"
+    status, result = aws_execute(config, [
+        'iam', 'upload-server-certificate',
+        '--server-certificate-name ciinabox',
+        "--certificate-body file://#{cert_dir}/ssl/ciinabox.crt",
+        "--private-key file://#{cert_dir}/ssl/ciinabox.key",
+        "--certificate-chain file://#{cert_dir}/ssl/ciinabox.crt"
     ])
     if status > 0
       puts "fail to create or update IAM server-certificates. See error logs for details"
@@ -190,10 +233,10 @@ namespace :ciinabox do
       puts "keypair for ciinabox #{ciinabox_name} already exists...please delete if you wish to re-create it"
       exit 1
     end
-    status, result = aws_execute( config, ['ec2', 'create-key-pair',
-      "--key-name ciinabox",
-      "--query 'KeyMaterial'",
-      "--out text"
+    status, result = aws_execute(config, ['ec2', 'create-key-pair',
+                                          "--key-name ciinabox",
+                                          "--query 'KeyMaterial'",
+                                          "--out text"
     ], "#{keypair_dir}/ciinabox.pem")
     puts result
     if status > 0
@@ -208,7 +251,7 @@ namespace :ciinabox do
   desc('Deploy Cloudformation templates to S3')
   task :deploy do
     check_active_ciinabox(config)
-    status, result = aws_execute( config, ['s3', 'sync', '--delete', 'output/', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"] )
+    status, result = aws_execute(config, ['s3', 'sync', '--delete', 'output/', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"])
     puts result
     if status > 0
       puts "fail to upload rendered templates to S3 bucket #{config['source_bucket']}"
@@ -221,10 +264,10 @@ namespace :ciinabox do
   desc('Creates the ciinabox environment')
   task :create do
     check_active_ciinabox(config)
-    status, result = aws_execute( config, ['cloudformation', 'create-stack',
-      "--stack-name #{stack_name}",
-      "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
-      '--capabilities CAPABILITY_IAM'
+    status, result = aws_execute(config, ['cloudformation', 'create-stack',
+                                          "--stack-name #{stack_name}",
+                                          "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
+                                          '--capabilities CAPABILITY_IAM'
     ])
     puts result
     if status > 0
@@ -238,10 +281,10 @@ namespace :ciinabox do
   desc('Updates the ciinabox environment')
   task :update do
     check_active_ciinabox(config)
-    status, result = aws_execute( config, ['cloudformation', 'update-stack',
-      "--stack-name #{stack_name}",
-      "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
-      '--capabilities CAPABILITY_IAM'
+    status, result = aws_execute(config, ['cloudformation', 'update-stack',
+                                          "--stack-name #{stack_name}",
+                                          "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
+                                          '--capabilities CAPABILITY_IAM'
     ])
     puts result
     if status > 0
@@ -272,7 +315,7 @@ namespace :ciinabox do
     STDOUT.puts "Are you sure you want to tear down the #{config['ciinabox_name']} ciinabox? (y/n)"
     input = STDIN.gets.strip
     if input == 'y'
-      status, result = aws_execute( config, ['cloudformation', 'delete-stack', "--stack-name #{stack_name}"] )
+      status, result = aws_execute(config, ['cloudformation', 'delete-stack', "--stack-name #{stack_name}"])
       puts result
       if status > 0
         puts "fail to tear down ciinabox environment"
@@ -295,9 +338,47 @@ namespace :ciinabox do
     puts "ssh #{get_ecs_ip_address(config)}"
   end
 
+  desc('map availability zones')
+  task :map_availability_zones do
+    check_active_ciinabox(config)
+    #Set AWS SDK credentials from configured profile
+    load_awssdk_credentials(config['aws_profile'])
+    az_config_file = "#{ciinaboxes_dir}/#{ciinabox_name}/config/aws_az_map.yml"
+    sts = Aws::STS::Client.new(region: config['aws_region'])
+    resp = sts.get_caller_identity()
+    mapping = Hash.new
+    mapping['mapped_availability_zones'] = Hash.new
+    account = resp.account
+    puts "Gettings regions in account: #{account}"
+    ec2 = Aws::EC2::Client.new(region: config['aws_region'])
+    region_resp = ec2.describe_regions({})
+    mapping['mapped_availability_zones'][account] = Hash.new
+    region_resp.regions.each do |region|
+      puts "Gettings availability zones in region: #{region.region_name}"
+      ec2region = Aws::EC2::Client.new(region: region.region_name)
+      mapping['mapped_availability_zones'][account][region.region_name] = Hash.new
+      az_resp = ec2region.describe_availability_zones({})
+      config['maximum_availability_zones'].times do |i|
+        mapping['mapped_availability_zones'][account][region.region_name][i] = false
+      end
+      az_resp.availability_zones.each_with_index do |az, i|
+        puts "  Adding mapping for #{az.zone_name}"
+        mapping['mapped_availability_zones'][account][region.region_name][i] = az.zone_name
+      end
+    end
+    puts "Saving availability zone mapping to #{az_config_file}"
+    if File.file?(az_config_file)
+      existing_mapping= YAML::load(File.open(az_config_file).read)
+      new_mapping = Hash.new
+      new_mapping['mapped_availability_zones'] = existing_mapping['mapped_availability_zones'].merge(mapping['mapped_availability_zones'])
+    else
+      new_mapping = mapping
+    end
+    File.open(az_config_file, 'w') { |f| f.write new_mapping.to_yaml }
+  end
 
   def check_active_ciinabox(config)
-    if(config.nil? || config['ciinabox_name'].nil?)
+    if (config.nil? || config['ciinabox_name'].nil?)
       puts "no active ciinabox please...run rake ciinabox:active or ciinabox:init"
       exit 1
     end
@@ -336,11 +417,11 @@ namespace :ciinabox do
   end
 
   def get_ecs_ip_address(config)
-    status, result = aws_execute( config, [
-      'ec2',
-      'describe-instances',
-      '--query Reservations[*].Instances[?Tags[?Value==\`ciinabox-ecs\`]].PrivateIpAddress',
-      '--out text'
+    status, result = aws_execute(config, [
+        'ec2',
+        'describe-instances',
+        '--query Reservations[*].Instances[?Tags[?Value==\`ciinabox-ecs\`]].PrivateIpAddress',
+        '--out text'
     ])
     if status > 0
       return nil

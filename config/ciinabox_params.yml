@@ -1,7 +1,7 @@
 #ciinabox default config
 ciinabox_name: <%= ciinabox_name %>
 
-aws_profile: <%= ciinabox_name %>
+aws_profile: <%= aws_profile %>
 
 aws_region: <%= ciinabox_region %>
 
