@@ -1,61 +1,61 @@
 require 'cfndsl'
-require_relative '../ext/az'
+require_relative '../ext/helper.rb'
+require_relative '../ext/az.rb'
 
-CloudFormation do
+CloudFormation {
 
   # Template metadata
   AWSTemplateFormatVersion "2010-09-09"
-  Description "ciinabox - VPC v#{cf_version}"
+  Description "ciinabox - VPC v#{ciinabox_version}"
 
   # Parameters
-  Parameter("EnvironmentType"){ Type 'String' }
-  Parameter("EnvironmentName"){ Type 'String' }
-  Parameter("CostCenter"){ Type 'String' }
-  Parameter("StackOctet") {
-    Type 'String'
-    AllowedPattern '[0-9]*'
-  }
-  $maximum_availability_zones.times do |az|
+  # Parameter("EnvironmentType"){ Type 'String' }
+  # Parameter("EnvironmentName"){ Type 'String' }
+  # Parameter("StackOctet") {
+  #   Type 'String'
+  #   AllowedPattern '[0-9]*'
+  # }
+
+
+  # Global mappings
+  Mapping('EnvironmentType', Mappings['EnvironmentType'])
+  Mapping('NatAMI', natAMI)
+  # Mapping('AccountId', {aws_account_id})
+
+  #Nat Elastic IP Allocation ID Params
+  maximum_availability_zones.times do |az|
     Parameter("Nat#{az}EIPAllocationId") {
       Type 'String'
       Default 'dynamic'
     }
   end
 
-  # Pre-rendered mappings
-  mapped_availability_zones.each do |account,map|
-    Mapping(account,map)
-  end
-
-  # Global mappings
-  Mapping('EnvironmentType', EnvironmentType)
-  Mapping('AccountId', AccountId)
-
-  # Conditions
-  az_condtions()
-  az_count()
-
   maximum_availability_zones.times do |az|
     Condition("Nat#{az}EIPRequired", FnAnd([FnEquals(Ref("Nat#{az}EIPAllocationId"), 'dynamic'),"Condition" => "Az#{az}"]))
   end
 
-  # Resources
+  # Pre-rendered AZ mappings
+  mapped_availability_zones.each do |account,map|
+    Mapping(account,map)
+  end
 
+  # Conditions
+  az_conditions(maximum_availability_zones)
+  az_count(maximum_availability_zones)
+
+
+  # Resources
   Resource("VPC") {
     Type 'AWS::EC2::VPC'
-    Property('CidrBlock', FnJoin( '', [ FnFindInMap('EnvironmentType', Ref('EnvironmentType'),'NetworkPrefix'),".", Ref('StackOctet'), ".0.0/", FnFindInMap('EnvironmentType', Ref('EnvironmentType'),'StackMask') ] ))
+    Property('CidrBlock', FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/", FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ))
     Property('EnableDnsSupport', true)
     Property('EnableDnsHostnames', true)
-  }
-
-  Resource("HostedZone") {
-    Type 'AWS::Route53::HostedZone'
-    Property('Name', FnJoin('.', [ Ref('EnvironmentName'), FnFindInMap('AccountId', Ref('AWS::AccountId'),'DnsDomain') ]) )
+    Property('Tags',[ {Key: 'Name', Value: stack_name }])
   }
 
   Resource("DHCPOptionSet") {
     Type 'AWS::EC2::DHCPOptions'
-    Property('DomainName', FnJoin('.', [ Ref('EnvironmentName'), FnFindInMap('AccountId',Ref('AWS::AccountId'),'DnsDomain') ]))
+    Property('DomainName',  dns_domain)
     Property('DomainNameServers', ['AmazonProvidedDNS'])
   }
 
@@ -65,35 +65,110 @@ CloudFormation do
     Property('DhcpOptionsId', Ref('DHCPOptionSet'))
   }
 
+
   Resource("InternetGateway") {
     Type 'AWS::EC2::InternetGateway'
   }
 
   Resource("AttachGateway") {
-    DependsOn ["InternetGateway"]
     Type 'AWS::EC2::VPCGatewayAttachment'
     Property('VpcId', Ref('VPC'))
     Property('InternetGatewayId', Ref('InternetGateway'))
   }
 
-  az_create_subnets(stacks['vpc']['subnet_allocation'],'SubnetPublic')
+  az_create_subnets(vpc['SubnetOctet'],'SubnetPublic')
+
+  maximum_availability_zones.times do |az|
+    Resource("NatIPAddress#{az}") {
+      Type 'AWS::EC2::EIP'
+      Condition("Nat#{az}EIPRequired")
+      DependsOn ["AttachGateway"]
+      Property('Domain', 'vpc')
+    }
+  end
+
+  maximum_availability_zones.times do |az|
+    Resource("NatGateway#{az}") {
+      Type 'AWS::EC2::NatGateway'
+      Condition("Az#{az}")
+      Property('AllocationId', FnIf("Nat#{az}EIPRequired",
+                                    FnGetAtt("NatIPAddress#{az}",'AllocationId'),
+                                    Ref("Nat#{az}EIPAllocationId")
+      ))
+      Property('SubnetId', Ref("SubnetPublic#{az}"))
+    }
+  end
+
+  Resource("RouteTablePublic") {
+    Type 'AWS::EC2::RouteTable'
+    Property('VpcId', Ref('VPC'))
+    Property('Tags',[ { Key: 'Name', Value: 'RouteTable-public'}])
+  }
+
+  maximum_availability_zones.times do |az|
+    Resource("RouteTablePrivate#{az}") {
+      Condition "Az#{az}"
+      Type 'AWS::EC2::RouteTable'
+      Property('VpcId', Ref('VPC'))
+      Property('Tags',[ { Key: 'Name', Value: "RouteTable-private-#{az}"}])
+    }
+  end
+
+  maximum_availability_zones.times do |az|
+    Resource("SubnetRouteTableAssociationPublic#{az}") {
+      Type 'AWS::EC2::SubnetRouteTableAssociation'
+      Condition "Az#{az}"
+      Property('SubnetId', Ref("SubnetPublic#{az}"))
+      Property('RouteTableId', Ref('RouteTablePublic'))
+    }
+  end
+
+  Resource("PublicRouteOutToInternet") {
+    Type 'AWS::EC2::Route'
+    Property('RouteTableId', Ref('RouteTablePublic'))
+    Property('DestinationCidrBlock', '0.0.0.0/0')
+    Property('GatewayId',Ref('InternetGateway'))
+  }
+
+  maximum_availability_zones.times do |az|
+    Resource("RouteOutToInternet#{az}") {
+      Type 'AWS::EC2::Route'
+      Condition "Az#{az}"
+      Property('RouteTableId', Ref("RouteTablePrivate#{az}"))
+      Property('DestinationCidrBlock', '0.0.0.0/0')
+      Property('NatGatewayId',Ref("NatGateway#{az}"))
+    }
+  end
 
   Resource("PublicNetworkAcl") {
     Type 'AWS::EC2::NetworkAcl'
     Property('VpcId', Ref('VPC'))
   }
 
-  # Name: [ RuleNumber, Protocol, RuleAction, Egress, CidrBlock, PortRange From, PortRange To ]
+  # Name => RuleNumber, Protocol, RuleAction, Egress, CidrBlock, PortRange From, PortRange To
   acls = {
-      # Inbound rules
-      InboundEphemeralPublicNetworkAclEntry:  ['100','6','allow','false','0.0.0.0/0','1024','65535'],
-      InboundSSHPublicNetworkAclEntry:        ['101','6','allow','false','0.0.0.0/0','22','22'],
-      InboundHTTPPublicNetworkAclEntry:       ['102','6','allow','false','0.0.0.0/0','80','80'],
-      InboundHTTPSPublicNetworkAclEntry:      ['103','6','allow','false','0.0.0.0/0','443','443'],
-      InboundNTPPublicNetworkAclEntry:        ['104','17','allow','false','0.0.0.0/0','123','123'],
-      # Outbound rules
-      OutboundNetworkAclEntry:                ['100','-1','allow','true','0.0.0.0/0','0','65535']
+    # Inbound
+    InboundTCPEphemeralPublicNetworkAclEntry: ['1001','6','allow','false','0.0.0.0/0','1024','65535'],
+    InboundUDPEphemeralPublicNetworkAclEntry: ['1002','17','allow','false','0.0.0.0/0','1024','65535'],
+    InboundSSHPublicNetworkAclEntry:          ['1003','6','allow','false','0.0.0.0/0','22','22'],
+    InboundHTTPPublicNetworkAclEntry:         ['1004','6','allow','false','0.0.0.0/0','80','80'],
+    InboundHTTPSPublicNetworkAclEntry:        ['1005','6','allow','false','0.0.0.0/0','443','443'],
+    InboundNTPPublicNetworkAclEntry:          ['1006','17','allow','false','0.0.0.0/0','123','123'],
+
+    # Outbound
+    OutboundNetworkAclEntry:                  ['1001','-1','allow','true','0.0.0.0/0','0','65535']
   }
+
+  # merges acls defined in config with acls in vpc template incrementing the RuleNumber by 1
+  if defined? customAcl
+    rule_number = 2000
+    customAcl.each do |acl|
+      rule_number += 1
+      acls.merge!((acl['Egress'] ? 'Outbound' : 'Inbound') + acl['Name'] + 'PublicNetworkAclEntry' =>
+        [rule_number,acl['Protocol'],'allow',acl['Egress'],acl['CidrBlock'] ? acl['CidrBlock'] : '0.0.0.0/0',acl['Port'],acl['Port']])
+    end
+  end
+
   acls.each do |alcName,alcProperties|
     Resource(alcName) {
       Type 'AWS::EC2::NetworkAclEntry'
@@ -103,153 +178,112 @@ CloudFormation do
       Property('RuleAction', alcProperties[2])
       Property('Egress', alcProperties[3])
       Property('CidrBlock', alcProperties[4])
-      Property('PortRange',{ From: alcProperties[5], To: alcProperties[6] })
+      Property('PortRange',{
+        From: alcProperties[5],
+        To: alcProperties[6]
+      })
     }
   end
 
   maximum_availability_zones.times do |az|
     Resource("SubnetNetworkAclAssociationPublic#{az}") {
-      Condition "Az#{az}"
       Type 'AWS::EC2::SubnetNetworkAclAssociation'
+      Condition "Az#{az}"
       Property('SubnetId', Ref("SubnetPublic#{az}"))
       Property('NetworkAclId', Ref('PublicNetworkAcl'))
     }
   end
 
-  Resource("RouteTablePublic") {
-    Type 'AWS::EC2::RouteTable'
-    Property('VpcId', Ref('VPC'))
-    Property('Tags',[ { Key: 'Name', Value: FnJoin( "", [ Ref('EnvironmentName'), "-public" ]) }])
-  }
-
-  maximum_availability_zones.times do |az|
-    Resource("RouteTablePrivate#{az}") {
-      Condition "Az#{az}"
-      Type 'AWS::EC2::RouteTable'
-      Property('VpcId', Ref('VPC'))
-      Property('Tags',[ { Key: 'Name', Value: FnJoin("", [ Ref('EnvironmentName'), "-private#{az}" ]) } ])
-    }
-  end
-
-  maximum_availability_zones.times do |az|
-    Resource("SubnetRouteTableAssociationPublic#{az}") {
-      Condition "Az#{az}"
-      Type 'AWS::EC2::SubnetRouteTableAssociation'
-      Property('SubnetId', Ref("SubnetPublic#{az}"))
-      Property('RouteTableId', Ref('RouteTablePublic'))
-    }
-  end
-
-  Resource("PublicRouteOutToInternet") {
-    Type 'AWS::EC2::Route'
-    DependsOn ["AttachGateway"]
-    Property('RouteTableId', Ref("RouteTablePublic"))
-    Property('DestinationCidrBlock', '0.0.0.0/0')
-    Property('GatewayId',Ref("InternetGateway"))
-  }
-
-  maximum_availability_zones.times do |az|
-    Resource("RouteOutToInternet#{az}") {
-      Condition "Az#{az}"
-      DependsOn ["NatGateway#{az}"]
-      Type 'AWS::EC2::Route'
-      Property('RouteTableId', Ref("RouteTablePrivate#{az}"))
-      Property('DestinationCidrBlock', '0.0.0.0/0')
-      Property('NatGatewayId',Ref("NatGateway#{az}"))
-    }
-  end
-
-  maximum_availability_zones.times do |az|
-    Resource("NatIPAddress#{az}") {
-      DependsOn ["AttachGateway"]
-      Condition("Nat#{az}EIPRequired")
-      Type 'AWS::EC2::EIP'
-      Property('Domain', 'vpc')
-    }
-  end
-
-  maximum_availability_zones.times do |az|
-    Resource("NatGateway#{az}") {
-      Condition("Az#{az}")
-      Type 'AWS::EC2::NatGateway'
-      Property('AllocationId', FnIf("Nat#{az}EIPRequired",
-                                    FnGetAtt("NatIPAddress#{az}",'AllocationId'),
-                                    Ref("Nat#{az}EIPAllocationId")
-      ))
-      Property('SubnetId', Ref("SubnetPublic#{az}"))
-    }
-  end
-
-  route_tables = az_conditional_resources('RouteTablePrivate')
-
-  Resource("VPCEndpoint") {
-    Type "AWS::EC2::VPCEndpoint"
-    Property("PolicyDocument", {
-        Version:"2012-10-17",
-        Statement:[{
-                       Effect:"Allow",
-                       Principal: "*",
-                       Action:["s3:*"],
-                       Resource:["arn:aws:s3:::*"]
-                   }]
-    })
-    Property("RouteTableIds", route_tables)
-    Property("ServiceName", FnJoin("", [ "com.amazonaws.", Ref("AWS::Region"), ".s3"]))
-    Property("VpcId",  Ref('VPC'))
-  }
-
-  opsRules = []
-  opsAccess['ips'].each do |ip|
-    opsAccess['rules'].each do |rules|
-      opsRules << { IpProtocol: "#{rules['IpProtocol']}", FromPort: "#{rules['FromPort']}", ToPort: "#{rules['ToPort']}", CidrIp: ip }
-    end
+  rules = []
+  opsAccess.each do |ip|
+    rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: ip }
   end
 
   Resource("SecurityGroupOps") {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
     Property('GroupDescription', 'Ops External Access')
-    Property('SecurityGroupIngress', opsRules)
+    Property('SecurityGroupIngress', rules)
   }
 
-  devRules = []
-  devAccess['ips'].each do |ip|
-    devAccess['rules'].each do |rules|
-      devRules << { IpProtocol: "#{rules['IpProtocol']}", FromPort: "#{rules['FromPort']}", ToPort: "#{rules['ToPort']}", CidrIp: ip }
-    end
+  rules = []
+  devAccess.each do |ip|
+    rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: ip }
   end
 
   Resource("SecurityGroupDev") {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
     Property('GroupDescription', 'Dev Team Access')
-    Property('SecurityGroupIngress', devRules)
+    Property('SecurityGroupIngress', rules)
   }
-
-  #Backplane security group
-  backplaneRules = []
-  backplaneAccess['rules'].each do |rules|
-    backplaneRules << { IpProtocol: "#{rules['IpProtocol']}", FromPort: "#{rules['FromPort']}", ToPort: "#{rules['ToPort']}", CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType', Ref('EnvironmentType'),'NetworkPrefix'), ".", Ref('StackOctet'), ".", "0.0/16" ] ) }
-  end
-
-  monitoringAccess['rules'].each do |rules|
-    backplaneRules << { IpProtocol: "#{rules['IpProtocol']}", FromPort: "#{rules['FromPort']}", ToPort: "#{rules['ToPort']}", CidrIp: monitoringSubnet }
-  end
 
   Resource("SecurityGroupBackplane") {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
     Property('GroupDescription', 'Backplane SG')
-    Property('SecurityGroupIngress', backplaneRules)
+    Property('SecurityGroupIngress', [
+      { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+      { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+      { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+      { IpProtocol: 'tcp', FromPort: '8080', ToPort: '8080', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+      { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+      { IpProtocol: 'tcp', FromPort: '3389', ToPort: '3389', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+      { IpProtocol: 'tcp', FromPort: '5985', ToPort: '5985', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+    ])
   }
 
-  # Outputs
-  Output("VPCId") { Value(Ref('VPC')) }
-  Output("SecurityGroupOps") { Value(Ref('SecurityGroupOps')) }
-  Output("SecurityGroupDev") { Value(Ref('SecurityGroupDev')) }
-  Output("SecurityGroupBackplane") { Value(Ref('SecurityGroupBackplane')) }
+  route_tables = az_conditional_resources('RouteTablePrivate')
+
+  Resource("S3VPCEndpoint") {
+    Type "AWS::EC2::VPCEndpoint"
+    Property("PolicyDocument", {
+      Version:"2012-10-17",
+      Statement:[{
+        Effect:"Allow",
+        Principal: "*",
+        Action:["*"],
+        Resource:["arn:aws:s3:::*"]
+      }]
+    })
+    Property("RouteTableIds", route_tables)
+    Property("ServiceName", FnJoin("", [ "com.amazonaws.", Ref("AWS::Region"), ".s3"]))
+    Property("VpcId",  Ref('VPC'))
+  }
+
+
+  Output("VPCId") {
+    Value(Ref('VPC'))
+  }
+
   maximum_availability_zones.times do |az|
-    Output("RouteTablePrivate#{az}") { Value(FnIf("Az#{az}",Ref("RouteTablePrivate#{az}"),'')) }
-    Output("SubnetPublic#{az}") { Value(FnIf("Az#{az}",Ref("SubnetPublic#{az}"),'')) }
+    Output("RouteTablePrivate#{az}") {
+      Value(FnIf("Az#{az}",Ref("RouteTablePrivate#{az}"),'N/A'))
+    }
   end
-end
+
+  maximum_availability_zones.times do |az|
+    Output("SubnetPublic#{az}") {
+      Value(FnIf("Az#{az}",Ref("SubnetPublic#{az}"),'N/A'))
+    }
+  end
+
+  Output("SecurityGroupBackplane") {
+    Value(Ref('SecurityGroupBackplane'))
+  }
+
+  Output("SecurityGroupOps") {
+    Value(Ref('SecurityGroupOps'))
+  }
+
+  Output("SecurityGroupDev") {
+    Value(Ref('SecurityGroupDev'))
+  }
+
+}

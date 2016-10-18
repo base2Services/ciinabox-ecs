@@ -47,11 +47,10 @@ azId:
 
 #Subnet offsets 10.150.x.0/26
 vpc:
-  SubnetOctetA: "0"
-  SubnetOctetB: "1"
+  SubnetOctet: 0
+
 ecs:
-  SubnetOctetA: "2"
-  SubnetOctetB: "3"
+  SubnetOctet: 1
 
 #ciinabox environment config
 Mappings:

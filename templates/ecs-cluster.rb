@@ -1,4 +1,5 @@
 require 'cfndsl'
+require_relative '../ext/az'
 
 volume_name = "ECSDataVolume"
 if defined? ecs_data_volume_name
@@ -19,28 +20,40 @@ CloudFormation {
   # Parameters
   Parameter("ECSCluster"){ Type 'String' }
   Parameter("VPC"){ Type 'String' }
-  Parameter("RouteTablePrivateA"){ Type 'String' }
-  Parameter("RouteTablePrivateB"){ Type 'String' }
-  Parameter("SubnetPublicA"){ Type 'String' }
-  Parameter("SubnetPublicB"){ Type 'String' }
   Parameter("SecurityGroupBackplane"){ Type 'String' }
+
+  # Pre-rendered AZ mappings
+  mapped_availability_zones.each do |account,map|
+    Mapping(account,map)
+  end
+
+  # Conditions
+  az_conditions(maximum_availability_zones)
+  az_count(maximum_availability_zones)
+
+  maximum_availability_zones.times do |az|
+    Parameter("RouteTablePrivate#{az}"){
+      Type 'String'
+      Default ''
+    }
+    Parameter("SubnetPublic#{az}"){
+      Type 'String'
+      Default ''
+    }
+  end
+
+
 
   # Global mappings
   Mapping('EnvironmentType', Mappings['EnvironmentType'])
   Mapping('ecsAMI', ecs_ami)
 
-  availability_zones.each do |az|
-    Resource("SubnetPrivate#{az}") {
-      Type 'AWS::EC2::Subnet'
-      Property('VpcId', Ref('VPC'))
-      Property('CidrBlock', FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'), ".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".", ecs["SubnetOctet#{az}"], ".0/", FnFindInMap('EnvironmentType','ciinabox','SubnetMask') ] ))
-      Property('AvailabilityZone', FnSelect(azId[az], FnGetAZs(Ref( "AWS::Region" )) ))
-    }
-  end
+  az_create_subnets(ecs['SubnetOctet'],'SubnetPrivate')
 
-  availability_zones.each do |az|
+  maximum_availability_zones.times do |az|
     Resource("SubnetRouteTableAssociationPrivate#{az}") {
       Type 'AWS::EC2::SubnetRouteTableAssociation'
+      Condition("Az#{az}")
       Property('SubnetId', Ref("SubnetPrivate#{az}"))
       Property('RouteTableId', Ref("RouteTablePrivate#{az}"))
     }
@@ -286,7 +299,7 @@ CloudFormation {
     MinSize 1
     MaxSize 1
     DesiredCapacity 1
-    VPCZoneIdentifier [ Ref('SubnetPrivateA') ]
+    VPCZoneIdentifier [ Ref('SubnetPrivate0') ]
     addTag("Name", FnJoin("",["ciinabox-ecs-xx"]), true)
     addTag("Environment",'ciinabox', true)
     addTag("EnvironmentType", 'ciinabox', true)
@@ -315,9 +328,9 @@ CloudFormation {
     }
   end
 
-  availability_zones.each do |az|
+  maximum_availability_zones.times do |az|
     Output("ECSSubnetPrivate#{az}") {
-      Value(Ref("SubnetPrivate#{az}"))
+      Value(FnIf("Az#{az}",Ref("SubnetPrivate#{az}"),'N/A'))
     }
   end
 

@@ -1,10 +1,14 @@
 $maximum_availability_zones = 5
 $subnet_multiplier = 8
 
-def az_condtions (x=$maximum_availability_zones)
+def az_conditions (x=$maximum_availability_zones)
   x.times do |az|
-    Condition("Az#{az}", FnNot([FnEquals(FnFindInMap(Ref("AWS::AccountId"),Ref("AWS::Region"),az),false)]))
+    Condition("Az#{az}", if_az_exists(az))
   end
+end
+
+def if_az_exists(az)
+  return FnNot([FnEquals(FnFindInMap(Ref("AWS::AccountId"),Ref("AWS::Region"),az),false)])
 end
 
 def az_count (x=$maximum_availability_zones)
@@ -39,7 +43,13 @@ def az_create_subnets (subnet_allocation,subnet_name,vpc='VPC',x=$maximum_availa
       Condition "Az#{az}"
       Type 'AWS::EC2::Subnet'
       Property('VpcId', Ref("#{vpc}"))
-      Property('CidrBlock', FnJoin( "", ['10.', Ref('StackOctet'), ".#{subnet_allocation * subnet_multiplier + az}.0/24"]))
+      Property('CidrBlock', FnJoin( "",
+                                    ['10.',
+                                     FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".",
+                                     "#{subnet_allocation * subnet_multiplier + az}.",
+                                     "0/",
+                                     FnFindInMap('EnvironmentType','ciinabox','SubnetMask')])
+      )
       Property('AvailabilityZone', FnFindInMap(Ref("AWS::AccountId"),Ref("AWS::Region"),az))
     }
   end

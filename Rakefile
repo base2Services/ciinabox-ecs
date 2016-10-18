@@ -80,9 +80,11 @@ namespace :ciinabox do
         files: files,
         extras: [
             [:yaml, "config/default_params.yml"],
+            [:yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/aws_az_map.yml"],
             [:yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml"],
             [:yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml"],
-            [:ruby, 'ext/helper.rb']
+            [:ruby, 'ext/helper.rb'],
+            [:ruby, 'ext/az.rb']
         ]
     }
   end
