@@ -306,9 +306,9 @@ namespace :ciinabox do
   desc('Deletes/tears down the ciinabox environment')
   task :tear_down do
     check_active_ciinabox(config)
-    STDOUT.puts "Are you sure you want to tear down the #{config['ciinabox_name']} ciinabox? (y/n)"
-    input = STDIN.gets.strip
-    if input == 'y'
+    do_tear_down = prompt_yes_no("Are you sure you want to tear down the #{config['ciinabox_name']} ciinabox?")
+
+    if do_tear_down
       status, result = aws_execute(config, ['cloudformation', 'delete-stack', "--stack-name #{stack_name}"])
       puts result
       if status > 0

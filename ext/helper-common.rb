@@ -7,6 +7,8 @@ def prompt_yes_no(message)
     tmp_answer = get_input(message + ' (y/n)')
     if (tmp_answer.downcase == 'y' || tmp_answer == 'n')
       answer = tmp_answer == 'y'
+    else
+      puts "!!Please provide valid input (y/n)!!"
     end
   end
   return answer
