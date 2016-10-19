@@ -5,8 +5,8 @@ require 'erb'
 require 'fileutils'
 require 'net/http'
 require 'aws-sdk'
-require_relative './ext/helper-common'
-require_relative './ext/helper-aws'
+require_relative './ext/helper_common'
+require_relative './ext/helper_aws'
 require_relative './ext/validation'
 
 # Loads configuration from default params and merges

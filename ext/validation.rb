@@ -1,7 +1,7 @@
 require 'aws-sdk'
 require 'fileutils'
-require_relative './helper-aws'
-require_relative './helper-common'
+require_relative './helper_aws'
+require_relative './helper_common'
 
 def validate_create_environment(config, fail_on_error = false, prompt_on_error = true)
   begin
