@@ -3,21 +3,16 @@ require 'rake'
 require 'yaml'
 require 'erb'
 require 'fileutils'
-require "net/http"
-require "aws-sdk"
-
-# Sets ruby AWS SDK client to use named profile
-def load_awssdk_credentials(aws_profile)
-
-  if not aws_profile.nil?
-    Aws.config[:credentials] = Aws::SharedCredentials.new(profile_name: aws_profile)
-  end
-end
+require 'net/http'
+require 'aws-sdk'
+require_relative './ext/helper-common'
+require_relative './ext/helper-aws'
+require_relative './ext/validation'
 
 # Loads configuration from default params and merges
 # per-ciinabox defined parameters
 def load_yaml_config(ciinabox_name, ciinaboxes_dir)
-  default_params  = YAML.load(File.read("config/default_params.yml")) if File.exist?("config/default_params.yml")
+  default_params = YAML.load(File.read("config/default_params.yml")) if File.exist?("config/default_params.yml")
   config = default_params
 
   #Merge ciinabox defined parameters
@@ -29,20 +24,13 @@ def load_yaml_config(ciinabox_name, ciinaboxes_dir)
       config = config.merge(user_params)
     end
   end
-  return  config
+
+  config['ciinaboxes_dir'] = ciinaboxes_dir
+  config['ciinabox_name'] = ciinabox_name
+
+  return config
 end
 
-# Prompts user for Yes/No answer on standard input
-def prompt_yes_no(message)
-  answer = nil
-  while answer.nil?
-    tmp_answer = get_input(message + ' (y/n)')
-    if(tmp_answer.downcase == 'y' || tmp_answer == 'n')
-      answer = tmp_answer == 'y'
-    end
-  end
-  return answer
-end
 
 namespace :ciinabox do
 
@@ -266,6 +254,10 @@ namespace :ciinabox do
   desc('Creates the ciinabox environment')
   task :create do
     check_active_ciinabox(config)
+
+    #Validate that key used for launch configuration will be available in target region
+    validate_create_environment(config, false, true)
+
     status, result = aws_execute(config, ['cloudformation', 'create-stack',
                                           "--stack-name #{stack_name}",
                                           "--template-url https://#{config['source_bucket']}.s3.amazonaws.com/ciinabox/#{config['ciinabox_version']}/ciinabox.json",
@@ -386,20 +378,6 @@ namespace :ciinabox do
     end
   end
 
-  def aws_execute(config, cmd, output = nil)
-    config['aws_profile'].nil? ? '' : cmd << "--profile #{config['aws_profile']}"
-    config['aws_region'].nil? ? '' : cmd << "--region #{config['aws_region']}"
-    args = cmd.join(" ")
-    if config['log_level'] == :debug
-      puts "executing: aws #{args}"
-    end
-    if output.nil?
-      result = `aws #{args} 2>&1`
-    else
-      result = `aws #{args} > #{output}`
-    end
-    return $?.to_i, result
-  end
 
   def display_active_ciinabox(ciinaboxes_dir, ciinabox)
     puts "# Enable active ciinabox by executing or override ciinaboxes base directory:"
@@ -430,11 +408,6 @@ namespace :ciinabox do
     else
       return result
     end
-  end
-
-  def get_input(prompt)
-    puts prompt
-    $stdin.gets.chomp
   end
 
   def create_dirs(dir, name)
