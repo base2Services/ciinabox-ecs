@@ -1,5 +1,6 @@
 require 'cfndsl'
 require_relative '../ext/helper.rb'
+require_relative '../ext/az.rb'
 
 CloudFormation {
 
@@ -7,9 +8,41 @@ CloudFormation {
   AWSTemplateFormatVersion "2010-09-09"
   Description "ciinabox - VPC v#{ciinabox_version}"
 
+  # Parameters
+  # Parameter("EnvironmentType"){ Type 'String' }
+  # Parameter("EnvironmentName"){ Type 'String' }
+  # Parameter("StackOctet") {
+  #   Type 'String'
+  #   AllowedPattern '[0-9]*'
+  # }
+
+
   # Global mappings
   Mapping('EnvironmentType', Mappings['EnvironmentType'])
   Mapping('NatAMI', natAMI)
+  # Mapping('AccountId', {aws_account_id})
+
+  #Nat Elastic IP Allocation ID Params
+  maximum_availability_zones.times do |az|
+    Parameter("Nat#{az}EIPAllocationId") {
+      Type 'String'
+      Default 'dynamic'
+    }
+  end
+
+  maximum_availability_zones.times do |az|
+    Condition("Nat#{az}EIPRequired", FnAnd([FnEquals(Ref("Nat#{az}EIPAllocationId"), 'dynamic'),"Condition" => "Az#{az}"]))
+  end
+
+  # Pre-rendered AZ mappings
+  mapped_availability_zones.each do |account,map|
+    Mapping(account,map)
+  end
+
+  # Conditions
+  az_conditions(maximum_availability_zones)
+  az_count(maximum_availability_zones)
+
 
   # Resources
   Resource("VPC") {
@@ -32,19 +65,6 @@ CloudFormation {
     Property('DhcpOptionsId', Ref('DHCPOptionSet'))
   }
 
-  availability_zones.each do |az|
-    Resource("SubnetPublic#{az}") {
-      Type 'AWS::EC2::Subnet'
-      Property('VpcId', Ref('VPC'))
-      Property('CidrBlock', FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'), ".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".", vpc["SubnetOctet#{az}"], ".0/", FnFindInMap('EnvironmentType','ciinabox','SubnetMask') ] ))
-      Property('AvailabilityZone', FnSelect(azId[az], FnGetAZs(Ref( "AWS::Region" )) ))
-      Property('Tags',[
-        {
-          Key: 'Name', Value: FnJoin( "", [ "ciinabox-public#{az}"])
-        }
-      ])
-    }
-  end
 
   Resource("InternetGateway") {
     Type 'AWS::EC2::InternetGateway'
@@ -56,33 +76,48 @@ CloudFormation {
     Property('InternetGatewayId', Ref('InternetGateway'))
   }
 
-  Resource("NatGatewayEIP") {
-    Type 'AWS::EC2::EIP'
-    Property('Domain', 'vpc')
-  }
+  az_create_subnets(vpc['SubnetOctet'],'SubnetPublic')
 
-  Resource("NatGateway") {
-    DependsOn 'AttachGateway'
-    Type 'AWS::EC2::NatGateway'
-    Property('AllocationId', FnGetAtt("NatGatewayEIP",'AllocationId'))
-    Property('SubnetId', Ref("SubnetPublic#{availability_zones[0]}"))
-  }
+  maximum_availability_zones.times do |az|
+    Resource("NatIPAddress#{az}") {
+      Type 'AWS::EC2::EIP'
+      Condition("Nat#{az}EIPRequired")
+      DependsOn ["AttachGateway"]
+      Property('Domain', 'vpc')
+    }
+  end
+
+  maximum_availability_zones.times do |az|
+    Resource("NatGateway#{az}") {
+      Type 'AWS::EC2::NatGateway'
+      Condition("Az#{az}")
+      Property('AllocationId', FnIf("Nat#{az}EIPRequired",
+                                    FnGetAtt("NatIPAddress#{az}",'AllocationId'),
+                                    Ref("Nat#{az}EIPAllocationId")
+      ))
+      Property('SubnetId', Ref("SubnetPublic#{az}"))
+    }
+  end
 
   Resource("RouteTablePublic") {
     Type 'AWS::EC2::RouteTable'
     Property('VpcId', Ref('VPC'))
+    Property('Tags',[ { Key: 'Name', Value: 'RouteTable-public'}])
   }
 
-  availability_zones.each do |az|
+  maximum_availability_zones.times do |az|
     Resource("RouteTablePrivate#{az}") {
+      Condition "Az#{az}"
       Type 'AWS::EC2::RouteTable'
       Property('VpcId', Ref('VPC'))
+      Property('Tags',[ { Key: 'Name', Value: "RouteTable-private-#{az}"}])
     }
   end
 
-  availability_zones.each do |az|
+  maximum_availability_zones.times do |az|
     Resource("SubnetRouteTableAssociationPublic#{az}") {
       Type 'AWS::EC2::SubnetRouteTableAssociation'
+      Condition "Az#{az}"
       Property('SubnetId', Ref("SubnetPublic#{az}"))
       Property('RouteTableId', Ref('RouteTablePublic'))
     }
@@ -90,17 +125,18 @@ CloudFormation {
 
   Resource("PublicRouteOutToInternet") {
     Type 'AWS::EC2::Route'
-    Property('RouteTableId', Ref("RouteTablePublic"))
+    Property('RouteTableId', Ref('RouteTablePublic'))
     Property('DestinationCidrBlock', '0.0.0.0/0')
-    Property('GatewayId',Ref("InternetGateway"))
+    Property('GatewayId',Ref('InternetGateway'))
   }
 
-  availability_zones.each do |az|
+  maximum_availability_zones.times do |az|
     Resource("RouteOutToInternet#{az}") {
       Type 'AWS::EC2::Route'
+      Condition "Az#{az}"
       Property('RouteTableId', Ref("RouteTablePrivate#{az}"))
       Property('DestinationCidrBlock', '0.0.0.0/0')
-      Property('NatGatewayId',Ref("NatGateway"))
+      Property('NatGatewayId',Ref("NatGateway#{az}"))
     }
   end
 
@@ -149,9 +185,10 @@ CloudFormation {
     }
   end
 
-  availability_zones.each do |az|
+  maximum_availability_zones.times do |az|
     Resource("SubnetNetworkAclAssociationPublic#{az}") {
       Type 'AWS::EC2::SubnetNetworkAclAssociation'
+      Condition "Az#{az}"
       Property('SubnetId', Ref("SubnetPublic#{az}"))
       Property('NetworkAclId', Ref('PublicNetworkAcl'))
     }
@@ -203,10 +240,8 @@ CloudFormation {
     ])
   }
 
-  route_tables = []
-  availability_zones.each do |az|
-    route_tables << Ref("RouteTablePrivate#{az}")
-  end
+  route_tables = az_conditional_resources('RouteTablePrivate')
+
   Resource("S3VPCEndpoint") {
     Type "AWS::EC2::VPCEndpoint"
     Property("PolicyDocument", {
@@ -228,15 +263,15 @@ CloudFormation {
     Value(Ref('VPC'))
   }
 
-  availability_zones.each do |az|
+  maximum_availability_zones.times do |az|
     Output("RouteTablePrivate#{az}") {
-      Value(Ref("RouteTablePrivate#{az}"))
+      Value(FnIf("Az#{az}",Ref("RouteTablePrivate#{az}"),'N/A'))
     }
   end
 
-  availability_zones.each do |az|
+  maximum_availability_zones.times do |az|
     Output("SubnetPublic#{az}") {
-      Value(Ref("SubnetPublic#{az}"))
+      Value(FnIf("Az#{az}",Ref("SubnetPublic#{az}"),'N/A'))
     }
   end
 

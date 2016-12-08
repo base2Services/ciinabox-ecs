@@ -9,13 +9,23 @@ CloudFormation {
   # Parameters
   Parameter("ECSCluster"){ Type 'String' }
   Parameter("VPC"){ Type 'String' }
-  Parameter("SubnetPublicA"){ Type 'String' }
-  Parameter("SubnetPublicB"){ Type 'String' }
-  Parameter("ECSSubnetPrivateA"){ Type 'String' }
-  Parameter("ECSSubnetPrivateB"){ Type 'String' }
   Parameter("SecurityGroupBackplane"){ Type 'String' }
   Parameter("SecurityGroupOps"){ Type 'String' }
   Parameter("SecurityGroupDev"){ Type 'String' }
+
+  maximum_availability_zones.times do |az|
+    Parameter("SubnetPublic#{az}"){ Type 'String' }
+    Parameter("ECSSubnetPrivate#{az}"){ Type 'String' }
+  end
+
+  # Pre-rendered AZ mappings
+  mapped_availability_zones.each do |account,map|
+    Mapping(account,map)
+  end
+
+  # Conditions
+  az_conditions(maximum_availability_zones)
+  az_count(maximum_availability_zones)
 
   Resource("ECSRole") {
     Type 'AWS::IAM::Role'
@@ -152,6 +162,8 @@ CloudFormation {
     end
   end
 
+  public_subnets = az_conditional_resources('SubnetPublic')
+
   Resource('CiinaboxProxyELB') {
     Type 'AWS::ElasticLoadBalancing::LoadBalancer'
     Property('Listeners', elb_listners)
@@ -169,9 +181,7 @@ CloudFormation {
       Ref('SecurityGroupDev'),
       Ref('SecurityGroupWebHooks')
     ])
-    Property('Subnets',[
-      Ref('SubnetPublicA'),Ref('SubnetPublicB')
-    ])
+    Property('Subnets',public_subnets)
   }
 
   Resource("CiinaboxProxyDNS") {
@@ -184,6 +194,8 @@ CloudFormation {
       'HostedZoneId' => FnGetAtt('CiinaboxProxyELB','CanonicalHostedZoneNameID')
     })
   }
+
+  private_subnets  = az_conditional_resources('SubnetPrivate')
 
   if defined? internal_elb and internal_elb
     Resource('CiinaboxProxyELBInternal') {
@@ -204,9 +216,7 @@ CloudFormation {
         Ref('SecurityGroupDev'),
         Ref('SecurityGroupWebHooks')
       ])
-      Property('Subnets',[
-        Ref('ECSSubnetPrivateA'),Ref('ECSSubnetPrivateB')
-      ])
+      Property('Subnets',private_subnets)
     }
 
     services.each do |service|

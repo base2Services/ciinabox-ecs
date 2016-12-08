@@ -35,10 +35,8 @@ internal_elb: false
 
 #icinga2_image: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION/base2/icinga2:VERSION_TAG
 
-#AWS Availability Zones Idenifers
-availability_zones:
-  - 'A'
-  - 'B'
+#Maximum number of availability zones per region
+maximum_availability_zones: 5
 
 azId:
   A: 0
@@ -49,11 +47,10 @@ azId:
 
 #Subnet offsets 10.150.x.0/26
 vpc:
-  SubnetOctetA: "0"
-  SubnetOctetB: "1"
+  SubnetOctet: 0
+
 ecs:
-  SubnetOctetA: "2"
-  SubnetOctetB: "3"
+  SubnetOctet: 1
 
 #ciinabox environment config
 Mappings:
