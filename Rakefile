@@ -3,6 +3,7 @@ require 'rake'
 require 'yaml'
 require 'erb'
 require 'fileutils'
+require 'pathname'
 require "net/http"
 
 namespace :ciinabox do
@@ -31,6 +32,10 @@ namespace :ciinabox do
 
   if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/templates")
     templates2 = Dir["#{ciinaboxes_dir}/#{ciinabox_name}/templates/**/*.rb"]
+
+    ## we want to exclude overridden templates
+    templatesLocalFileNames = templates2.collect { |templateFile| File.basename(templateFile)}
+    templates = templates.select { |templateFile| not templatesLocalFileNames.include? File.basename(templateFile)}
     templates = templates + templates2
   end
 
