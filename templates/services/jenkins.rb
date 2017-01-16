@@ -9,7 +9,7 @@ if !defined? internal_elb
   internal_elb = nil
 end
 
-image = 'base2/ciinabox-jenkins'
+image = 'base2/ciinabox-jenkins:2'
 jenkins_java_opts = ''
 memory = 2048
 cpu = 300
