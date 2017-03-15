@@ -104,7 +104,7 @@ CloudFormation {
 	    }
 	   ]
 	  }
-	},	    
+	},
        {
         PolicyName: 'ecsServiceRole',
         PolicyDocument: {
