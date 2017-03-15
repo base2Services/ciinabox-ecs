@@ -15,6 +15,9 @@ timezone: GMT
 #change for internal ELBs
 internal_elb: false
 
+#add if you want ecs root volume != 8GB - must be > 8
+#ecs_root_volume_size: 30
+
 #add if you want ecs docker volume != 22GB - must be > 22
 #ecs_docker_volume_size: 100
 

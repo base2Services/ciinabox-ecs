@@ -245,21 +245,39 @@ CloudFormation {
     addTag("MakeSnapshot", "true")
   }
 
+  ecs_block_device_mapping = []
+
+  if defined? ecs_root_volume_size and ecs_root_volume_size > 8
+    ecs_block_device_mapping << [
+      {
+        "DeviceName" => "/dev/sda1",
+        "Ebs" => {
+          "VolumeSize" => ecs_root_volume_size
+        }
+      }
+    ]
+  end
+
+  if defined? ecs_docker_volume_size and ecs_docker_volume_size > 22
+    ecs_block_device_mapping << [
+      {
+        "DeviceName" => "/dev/xvdcz",
+        "Ebs" => {
+          "VolumeSize" => ecs_docker_volume_size,
+          "VolumeType" => "gp2"
+        }
+      }
+    ]
+  end
+
   LaunchConfiguration( :LaunchConfig ) {
     ImageId FnFindInMap('ecsAMI',Ref('AWS::Region'),'ami')
     IamInstanceProfile Ref('InstanceProfile')
     KeyName FnFindInMap('EnvironmentType','ciinabox','KeyName')
     SecurityGroups [ Ref('SecurityGroupBackplane') ]
     InstanceType FnFindInMap('EnvironmentType','ciinabox','ECSInstanceType')
-    if defined? ecs_docker_volume_size and ecs_docker_volume_size > 22
-      Property("BlockDeviceMappings", [
-        {
-          "DeviceName" => "/dev/xvdcz",
-          "Ebs" => {
-            "VolumeSize" => ecs_docker_volume_size,
-            "VolumeType" => "gp2"
-          }
-        }])
+    if not ecs_block_device_mapping.empty?
+      Property("BlockDeviceMappings", ecs_block_device_mapping)
     end
     UserData FnBase64(FnJoin("",[
       "#!/bin/bash\n",
