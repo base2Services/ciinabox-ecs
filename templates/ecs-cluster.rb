@@ -248,26 +248,22 @@ CloudFormation {
   ecs_block_device_mapping = []
 
   if defined? ecs_root_volume_size and ecs_root_volume_size > 8
-    ecs_block_device_mapping << [
-      {
-        "DeviceName" => "/dev/sda1",
-        "Ebs" => {
-          "VolumeSize" => ecs_root_volume_size
-        }
+    ecs_block_device_mapping << {
+      "DeviceName" => "/dev/sda1",
+      "Ebs" => {
+        "VolumeSize" => ecs_root_volume_size
       }
-    ]
+    }
   end
 
   if defined? ecs_docker_volume_size and ecs_docker_volume_size > 22
-    ecs_block_device_mapping << [
-      {
-        "DeviceName" => "/dev/xvdcz",
-        "Ebs" => {
-          "VolumeSize" => ecs_docker_volume_size,
-          "VolumeType" => "gp2"
-        }
+    ecs_block_device_mapping << {
+      "DeviceName" => "/dev/xvdcz",
+      "Ebs" => {
+        "VolumeSize" => ecs_docker_volume_size,
+        "VolumeType" => "gp2"
       }
-    ]
+    }
   end
 
   LaunchConfiguration( :LaunchConfig ) {
