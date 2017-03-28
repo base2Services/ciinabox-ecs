@@ -9,7 +9,7 @@ if !defined? internal_elb
   internal_elb = nil
 end
 
-image = 'base2/ciinabox-jenkins'
+image = 'base2/ciinabox-jenkins:2'
 jenkins_java_opts = ''
 memory = 2048
 cpu = 300
@@ -20,7 +20,7 @@ port_mappings = []
 
 if service
   jenkins_java_opts = service['JAVA_OPTS'] || ''
-  image = service['ContainerImage'] || 'base2/ciinabox-jenkins'
+  image = service['ContainerImage'] || image
   memory = service['ContainerMemory'] || 2048
   cpu = service['ContainerCPU'] || 300
 
