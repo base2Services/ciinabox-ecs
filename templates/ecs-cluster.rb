@@ -94,6 +94,18 @@ CloudFormation {
         }
       },
       {
+	PolicyName: 'Route53',
+	PolicyDocument: {
+	  Statement: [
+	    {
+	      Effect: 'Allow',
+	      Action: [ 'route53:ChangeResourceRecordSets', route53:ListHostedZonesByName ],
+	      Resource: '*'
+	    }
+	   ]
+	  }
+	},	    
+       {
         PolicyName: 'ecsServiceRole',
         PolicyDocument: {
           Statement: [
