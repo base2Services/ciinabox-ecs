@@ -1,11 +1,13 @@
 #ciinabox default config
 ciinabox_name: <%= ciinabox_name %>
 
-aws_profile: <%= ciinabox_name %>
+aws_profile: <%= ciinabox_aws_profile %>
 
 aws_region: <%= ciinabox_region %>
 
 aws_account_id: <%= ciinabox_aws_account %>
+
+stack_name: <%= stack_name %>
 
 #override S3 bucket location
 source_bucket: <%= ciinabox_source_bucket %>
