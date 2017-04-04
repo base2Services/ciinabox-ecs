@@ -99,7 +99,7 @@ CloudFormation {
 	  Statement: [
 	    {
 	      Effect: 'Allow',
-	      Action: [ 'route53:ChangeResourceRecordSets', route53:ListHostedZonesByName ],
+	      Action: [ 'route53:ChangeResourceRecordSets', 'route53:ListHostedZonesByName' ],
 	      Resource: '*'
 	    }
 	   ]
