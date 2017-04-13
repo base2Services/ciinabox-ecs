@@ -54,6 +54,9 @@ vpc:
 ecs:
   SubnetOctetA: "2"
   SubnetOctetB: "3"
+lambdaSubnets:
+  SubnetOctetA: "4"
+  SubnetOctetB: "5"
 
 #ciinabox environment config
 Mappings:

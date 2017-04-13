@@ -1,3 +1,5 @@
+require_relative '../ext/policies'
+
 CloudFormation do
 
   # Template metadata
@@ -68,6 +70,7 @@ CloudFormation do
   #e.g CIINABOXES_DIR/CIINABOX/templates/x.rb
   #for f in foreign templates do:
   #  new stack
+
   if defined? extra_stacks
     extra_stacks.each do | stack, details |
 
@@ -128,5 +131,6 @@ CloudFormation do
   Output("ECSInstanceProfile") {
     Value(FnGetAtt('ECSStack', 'Outputs.ECSInstanceProfile'))
   }
+
 
 end

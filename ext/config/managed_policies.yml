@@ -1,0 +1,125 @@
+ec2-describe:
+  action:
+    - ec2:Describe*
+    - autoscaling:Describe*
+    - elasticloadbalancing:Describe*
+
+cloudwatch-logs:
+  action:
+    - logs:CreateLogGroup
+    - logs:CreateLogStream
+    - logs:PutLogEvents
+    - logs:DescribeLogStreams
+    - logs:DescribeLogGroups
+  resource:
+    - arn:aws:logs:*:*:*
+
+cloudwatch-monitoring:
+  action:
+    - cloudwatch:PutMetricData
+    - cloudwatch:GetMetricStatistics
+    - cloudwatch:ListMetrics
+
+s3-list-buckets:
+  action:
+    - s3:ListAllMyBuckets
+    - s3:ListBucket
+
+s3-chef-ro:
+  action:
+    - s3:Get*
+    - s3:List*
+  resource:
+    - arn:aws:s3:::%{source_bucket}/chef
+    - arn:aws:s3:::%{source_bucket}/chef/*
+
+s3-codedeploy-ro:
+  action:
+    - s3:Get*
+    - s3:List*
+  resource:
+    - arn:aws:s3:::%{source_bucket}/codedeploy
+    - arn:aws:s3:::%{source_bucket}/codedeploy/*
+
+ecs-service-role:
+  action:
+    - ecs:CreateCluster
+    - ecs:DeregisterContainerInstance
+    - ecs:DiscoverPollEndpoint
+    - ecs:Poll
+    - ecs:RegisterContainerInstance
+    - ecs:StartTelemetrySession
+    - ecs:Submit*
+    - ec2:AuthorizeSecurityGroupIngress
+    - ec2:Describe*
+    - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+    - elasticloadbalancing:Describe*
+    - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+    - autoscaling:Describe*
+
+ecr-pull-images:
+  action:
+    - ecr:BatchCheckLayerAvailability
+    - ecr:BatchGetImage
+    - ecr:Get*
+    - ecr:List*
+
+attach-ebs-volume:
+  action:
+    - ec2:DescribeVolumes
+    - ec2:AttachVolume
+    - ec2:DetachVolume
+
+attach-network-interface:
+  action:
+    - ec2:DescribeNetworkInterfaces
+    - ec2:AttachNetworkInterface
+    - ec2:DetachNetworkInterface
+
+associate-address:
+  action:
+    - ec2:AssociateAddress
+
+ssm:
+  action:
+    - ssm:DescribeAssociation
+    - ssm:GetDeployablePatchSnapshotForInstance
+    - ssm:GetDocument
+    - ssm:GetParameters
+    - ssm:ListAssociations
+    - ssm:ListInstanceAssociations
+    - ssm:PutInventory
+    - ssm:UpdateAssociationStatus
+    - ssm:UpdateInstanceAssociationStatus
+    - ssm:UpdateInstanceInformation
+
+ec2messages:
+  action:
+    - ec2messages:AcknowledgeMessage
+    - ec2messages:DeleteMessage
+    - ec2messages:FailMessage
+    - ec2messages:GetEndpoint
+    - ec2messages:GetMessages
+    - ec2messages:SendReply
+
+s3-secrets-ro:
+  action:
+    - s3:Get*
+    - s3:List*
+  resource:
+    - Fn::Join:
+      - ""
+      -
+        - 'arn:aws:s3:::'
+        - Fn::FindInMap:
+          - 'Secrets'
+          - Ref: 'EnvironmentType'
+          - 'bucket'
+        - '/'
+        - Fn::FindInMap:
+          - 'Secrets'
+          - Ref: 'EnvironmentType'
+          - 'key'
+        - '/'
+        - Ref: "EnvironmentName"
+        - '/*'
