@@ -50,15 +50,14 @@ namespace :ciinabox do
   end
 
   CfnDsl::RakeTask.new do |t|
+    extras = [[:yaml,'config/default_params.yml']]
+    (Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].map { |f| [:yaml,f]}).each {|c| extras<<c}
+    extras << [:ruby,'ext/helper.rb']
+
     t.cfndsl_opts = {
       verbose: true,
       files: files,
-      extras: [
-        [ :yaml, "config/default_params.yml" ],
-        [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml" ],
-        [ :yaml, "#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml" ],
-        [ :ruby, 'ext/helper.rb']
-      ]
+      extras: extras
     }
   end
 
