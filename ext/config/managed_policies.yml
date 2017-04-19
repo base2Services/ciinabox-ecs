@@ -33,6 +33,14 @@ s3-chef-ro:
     - arn:aws:s3:::%{source_bucket}/chef
     - arn:aws:s3:::%{source_bucket}/chef/*
 
+s3-environment-ro:
+  action:
+    - s3:Get*
+    - s3:List*
+  resource:
+    - arn:aws:s3:::%{source_bucket}/chef-environments
+    - arn:aws:s3:::%{source_bucket}/chef-environments/*
+
 s3-codedeploy-ro:
   action:
     - s3:Get*

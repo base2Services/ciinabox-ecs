@@ -49,6 +49,14 @@ class Lambdas
         }
       end
 
+      availability_zones.each do |az|
+        Resource("SubnetRouteTableAssociationPrivate#{az}") {
+          Type 'AWS::EC2::SubnetRouteTableAssociation'
+          Property('SubnetId', Ref("SubnetPrivate#{az}"))
+          Property('RouteTableId', Ref("RouteTablePrivate#{az}"))
+        }
+      end
+
       lambdas['roles'].each do |lambda_role, role_config|
         Resource("LambdaRole#{lambda_role}") {
           Type 'AWS::IAM::Role'

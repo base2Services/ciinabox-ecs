@@ -4,6 +4,12 @@ module Configs
   class << self; attr_accessor :managed_policies, :all end
   @managed_policies = YAML.load(File.read('ext/config/managed_policies.yml'))
   @all = Hash.new.tap { |h| Dir['config/*.yml'].each { |yml| h.merge!(YAML.load(File.open(yml))) }}
+  # Override with ciinabox configs
+  ciinaboxes_dir = ENV['CIINABOXES_DIR'] || 'ciinaboxes'
+  ciinabox_name = ENV['CIINABOX'] || ''
+  (Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"]).each { |yml|
+      @all.merge!(YAML.load(File.open(yml)))
+  }
 end
 
 class Policies
