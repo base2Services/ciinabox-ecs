@@ -29,8 +29,8 @@ devAccess:
 # Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs
 default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
 
-#add if you want volatile jenkins docker slave -- Note: by default jenkins docker slave mounts /data/jenkins-dind (on host) to /var/lib/docker (on container)
-volatile_jenkins_slave: true
+#set this to false to use volatile jenkins docker slave -- Note: by default jenkins docker slave mounts /data/jenkins-dind (on host) to /var/lib/docker (on container)
+mount_jenkins_slave: true
 
 #add if you want ecs docker volume != 22GB - must be > 22
 #ecs_docker_volume_size: 100
