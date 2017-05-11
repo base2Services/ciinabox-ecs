@@ -297,7 +297,7 @@ CloudFormation {
       "service docker stop\n",
       "service docker start\n",
       "start ecs\n",
-      "docker run --name jenkins-docker-slave --privileged=true -d -e PORT=4444 -p 4444:4444 -p 2223:22#{(defined? mount_jenkins_slave and mount_jenkins_slave)? ' -v /data/jenkins-dind/:/var/lib/docker ' : ' '}base2/ciinabox-dind-slave\n",
+      "docker run --name jenkins-docker-slave --privileged=true -d -e PORT=4444 -p 4444:4444 -p 2223:22#{(defined? volatile_jenkins_slave and volatile_jenkins_slave)? ' ' : ' -v /data/jenkins-dind/:/var/lib/docker '}base2/ciinabox-dind-slave\n",
       "echo 'done!!!!'\n"
     ]))
   }
