@@ -7,6 +7,7 @@ require 'pathname'
 require 'net/http'
 require 'securerandom'
 require 'base64'
+require 'tempfile'
 
 namespace :ciinabox do
 
