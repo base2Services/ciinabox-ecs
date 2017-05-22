@@ -58,6 +58,7 @@ namespace :ciinabox do
   end
 
   # Generate cloudformation templates, includes packaging of lambda functions
+  desc("Generate CloudFormation templates")
   task :generate => ['ciinabox:package_lambdas'] do
 
     FileUtils.mkdir_p 'output/services'
