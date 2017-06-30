@@ -249,7 +249,7 @@ CloudFormation {
 
   if defined? ecs_root_volume_size and ecs_root_volume_size > 8
     ecs_block_device_mapping << {
-      "DeviceName" => "/dev/sda1",
+      "DeviceName" => "/dev/xvda",
       "Ebs" => {
         "VolumeSize" => ecs_root_volume_size
       }
