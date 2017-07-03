@@ -230,7 +230,7 @@ CloudFormation {
     Roles [ Ref('Role') ]
   }
 
-  Volume(volume_name) {
+  EC2_Volume(volume_name) {
     DeletionPolicy 'Snapshot'
     Size volume_size
     VolumeType 'gp2'
