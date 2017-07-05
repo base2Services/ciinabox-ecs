@@ -16,6 +16,9 @@ cpu = 300
 container_port = 0
 service = lookup_service('jenkins', services)
 virtual_host = "jenkins.#{dns_domain}"
+if defined? internal_elb and internal_elb
+  virtual_host = "#{virtual_host},internal-jenkins.#{dns_domain}"
+end
 port_mappings = []
 
 if service
