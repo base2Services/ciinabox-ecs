@@ -489,7 +489,7 @@ namespace :ciinabox do
   end
 
   def get_my_public_ip_address
-    Net::HTTP.get(URI("https://api.ipify.org"))
+    Net::HTTP.get(URI("http://api.ipify.org"))
   end
 
   def write_config_tmp_file(config)
