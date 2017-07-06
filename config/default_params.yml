@@ -102,6 +102,10 @@ ecs_ami:
 webHooks:
   - 192.30.252.0/22 #github
 
+# if set to true, security group allowing connections from NAT gateway will be assigned to
+# ecs cluster (useful for windows jenkins slaves)
+allow_nat_connections: false
+
 #extra_stacks:
 #  elk:
 #    #define template name? - optional
@@ -111,3 +115,4 @@ webHooks:
 #      CertName: x
 #      StackOctetA: 11
 #      StackOctetB: 12
+
