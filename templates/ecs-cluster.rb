@@ -24,6 +24,8 @@ CloudFormation {
   Parameter("SubnetPublicA"){ Type 'String' }
   Parameter("SubnetPublicB"){ Type 'String' }
   Parameter("SecurityGroupBackplane"){ Type 'String' }
+  Parameter('SecurityGroupNatGateway'){ Type 'String' }
+
 
   # Global mappings
   Mapping('EnvironmentType', Mappings['EnvironmentType'])
@@ -266,11 +268,13 @@ CloudFormation {
     }
   end
 
+  ecs_sgs = (defined? allow_nat_connections and allow_nat_connections) ? [ Ref('SecurityGroupBackplane'),Ref('SecurityGroupNatGateway') ]  : [ Ref('SecurityGroupBackplane') ]
+
   LaunchConfiguration( :LaunchConfig ) {
     ImageId FnFindInMap('ecsAMI',Ref('AWS::Region'),'ami')
     IamInstanceProfile Ref('InstanceProfile')
     KeyName FnFindInMap('EnvironmentType','ciinabox','KeyName')
-    SecurityGroups [ Ref('SecurityGroupBackplane') ]
+    SecurityGroups ecs_sgs
     InstanceType FnFindInMap('EnvironmentType','ciinabox','ECSInstanceType')
     if not ecs_block_device_mapping.empty?
       Property("BlockDeviceMappings", ecs_block_device_mapping)

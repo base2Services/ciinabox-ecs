@@ -29,7 +29,8 @@ CloudFormation do
       RouteTablePrivateB: FnGetAtt('VPCStack', 'Outputs.RouteTablePrivateB'),
       SubnetPublicA: FnGetAtt('VPCStack', 'Outputs.SubnetPublicA'),
       SubnetPublicB: FnGetAtt('VPCStack', 'Outputs.SubnetPublicB'),
-      SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane')
+      SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane'),
+      SecurityGroupNatGateway: FnGetAtt('VPCStack', 'Outputs.SecurityGroupNatGateway')
     })
   }
 
