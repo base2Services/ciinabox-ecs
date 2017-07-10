@@ -266,3 +266,24 @@ internal_elb: false
     Protocol: TCP
 # needs internal_elb: true
 ```
+
+# Ciinabox configuration
+
+## IAM Roles
+
+Default IAM permission for ciinabox stack running Jenkins server are set in `config/default_params.yml`, under
+`ecs_iam_role_permissions_default` configuration key. You can extend this permissions on a ciinabox level 
+using `ecs_iam_role_permissions_extras` key. E.g.
+
+(within `$CIINABOXES_DIR/$CIINABOX/config/params.yml`)
+```yaml
+
+ecs_iam_role_permissions_extras:
+  -
+    name: allow-bucket-policy
+    actions:
+      - s3:PutBucketPolicy
+
+```
+
+

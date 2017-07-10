@@ -105,6 +105,115 @@ webHooks:
 # if set to true, security group allowing connections from NAT gateway will be assigned to
 # ecs cluster (useful for windows jenkins slaves)
 allow_nat_connections: false
+ecs_iam_role_permissions_extras:
+  - name: bucket-bucket-policy
+    action: s3:PutBucketPolicy
+
+ecs_iam_role_permissions_default:
+  - name: assume-role
+    actions:
+    - sts:AssumeRole
+    resource: '*'
+
+  - name: read-only
+    actions:
+    - ec2:Describe*
+    - s3:Get*
+    - s3:List*
+    resource: '*'
+
+  - name: s3-write
+    actions:
+    - s3:PutObject
+    - s3:PutObject*
+    resource: '*'
+
+  - name: Route53
+    actions:
+    - route53:ChangeResourceRecordSets
+    - route53:ListHostedZonesByName
+    resource: '*'
+
+  - name: ecsServiceRole
+    actions:
+    - ecs:CreateCluster
+    - ecs:DeregisterContainerInstance
+    - ecs:DiscoverPollEndpoint
+    - ecs:Poll
+    - ecs:RegisterContainerInstance
+    - ecs:StartTelemetrySession
+    - ecs:Submit*
+    - ec2:AuthorizeSecurityGroupIngress
+    - ec2:Describe*
+    - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+    - elasticloadbalancing:Describe*
+    - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+    resource: '*'
+
+  - name: ssm-run-command
+    actions:
+    - ssm:DescribeAssociation
+    - ssm:GetDocument
+    - ssm:ListAssociations
+    - ssm:UpdateAssociationStatus
+    - ssm:UpdateInstanceInformation
+    - ec2messages:AcknowledgeMessage
+    - ec2messages:DeleteMessage
+    - ec2messages:FailMessage
+    - ec2messages:GetEndpoint
+    - ec2messages:GetMessages
+    - ec2messages:SendReply
+    - cloudwatch:PutMetricData
+    - ec2:DescribeInstanceStatus
+    - ds:CreateComputer
+    - ds:DescribeDirectories
+    - logs:CreateLogGroup
+    - logs:CreateLogStream
+    - logs:DescribeLogGroups
+    - logs:DescribeLogStreams
+    - logs:PutLogEvents
+    - s3:PutObject
+    - s3:GetObject
+    - s3:AbortMultipartUpload
+    - s3:ListMultipartUploadParts
+    - s3:ListBucketMultipartUploads
+    resource: '*'
+
+  - name: ecr
+    actions:
+    - ecr:*
+    resource: '*'
+
+  - name: packer
+    actions:
+    - cloudformation:*
+    - ec2:AttachVolume
+    - ec2:CreateVolume
+    - ec2:DeleteVolume
+    - ec2:CreateKeypair
+    - ec2:DeleteKeypair
+    - ec2:CreateSecurityGroup
+    - ec2:DeleteSecurityGroup
+    - ec2:AuthorizeSecurityGroupIngress
+    - ec2:CreateImage
+    - ec2:RunInstances
+    - ec2:TerminateInstances
+    - ec2:StopInstances
+    - ec2:DescribeVolumes
+    - ec2:DetachVolume
+    - ec2:DescribeInstances
+    - ec2:CreateSnapshot
+    - ec2:DeleteSnapshot
+    - ec2:DescribeSnapshots
+    - ec2:DescribeImages
+    - ec2:RegisterImage
+    - ec2:CreateTags
+    - ec2:ModifyImageAttribute
+    - ec2:GetPasswordData
+    - iam:PassRole
+    - dynamodb:*
+    resource: '*'
+
 
 #extra_stacks:
 #  elk:
