@@ -105,9 +105,6 @@ webHooks:
 # if set to true, security group allowing connections from NAT gateway will be assigned to
 # ecs cluster (useful for windows jenkins slaves)
 allow_nat_connections: false
-ecs_iam_role_permissions_extras:
-  - name: bucket-bucket-policy
-    action: s3:PutBucketPolicy
 
 ecs_iam_role_permissions_default:
   - name: assume-role
@@ -224,4 +221,3 @@ ecs_iam_role_permissions_default:
 #      CertName: x
 #      StackOctetA: 11
 #      StackOctetB: 12
-
