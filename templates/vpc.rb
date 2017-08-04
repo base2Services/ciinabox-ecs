@@ -118,7 +118,7 @@ CloudFormation {
     InboundHTTPPublicNetworkAclEntry:         ['1004','6','allow','false','0.0.0.0/0','80','80'],
     InboundHTTPSPublicNetworkAclEntry:        ['1005','6','allow','false','0.0.0.0/0','443','443'],
     InboundNTPPublicNetworkAclEntry:          ['1006','17','allow','false','0.0.0.0/0','123','123'],
-    InboundNTPPublicNetworkAclEntry:          ['1007','6','allow','false','0.0.0.0/0','3389','3389'],
+    InboundRDPPublicNetworkAclEntry:          ['1007','6','allow','false','0.0.0.0/0','3389','3389'],
 
     # Outbound
     OutboundNetworkAclEntry:                  ['1001','-1','allow','true','0.0.0.0/0','0','65535']
