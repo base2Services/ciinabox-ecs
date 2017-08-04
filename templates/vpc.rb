@@ -118,6 +118,7 @@ CloudFormation {
     InboundHTTPPublicNetworkAclEntry:         ['1004','6','allow','false','0.0.0.0/0','80','80'],
     InboundHTTPSPublicNetworkAclEntry:        ['1005','6','allow','false','0.0.0.0/0','443','443'],
     InboundNTPPublicNetworkAclEntry:          ['1006','17','allow','false','0.0.0.0/0','123','123'],
+    InboundNTPPublicNetworkAclEntry:          ['1007','6','allow','false','0.0.0.0/0','3389','3389'],
 
     # Outbound
     OutboundNetworkAclEntry:                  ['1001','-1','allow','true','0.0.0.0/0','0','65535']
@@ -162,6 +163,7 @@ CloudFormation {
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '3389', ToPort: '3389', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: ip }
   end
 
@@ -177,6 +179,7 @@ CloudFormation {
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '3389', ToPort: '3389', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: ip }
   end
 
