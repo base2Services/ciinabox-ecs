@@ -106,6 +106,27 @@ webHooks:
 # ecs cluster (useful for windows jenkins slaves)
 allow_nat_connections: false
 
+# This option applies only for docker-in-docker jenkins slave
+# If slave is volatile, docker images data is not volume-mounted from EBS drive, and is lost once
+# jenkins slave is stopped (e.g. service task restarted)
+volatile_jenkins_slave: false
+
+# Include docker-in-docker jenkins slave as part of service task definition
+include_diind_slave: true
+
+# Include docker-outside-of-docker jenkins slave as part of service task definition
+# Docker version will be dependant on underlying ECS host
+include_dood_slave: false
+
+# allows overwrite for ciinabox docker slave version
+# currently 17.03.2-ce (tagged as latest) and 17.06.1-ce are supported
+# see https://hub.docker.com/r/base2/ciinabox-docker-slave/tags/ for further details
+docker_slave_version: 17.03.2-ce
+
+# Feature toggle for ECR Credentials helper, controlled via USE_ECR_CREDENTIAL_HELPER environment variable
+# If ecr credential helper is configured, it will fail on docker login command
+docker_slave_enable_ecr_credentials_helper: false
+
 ecs_iam_role_permissions_default:
   - name: assume-role
     actions:
