@@ -135,7 +135,7 @@ end
 # If docker outside of docker slave is enabled
 if defined? include_dood_slave and include_dood_slave
   container_definitions[0][:Links] << 'jenkins-docker-dood-slave'
-  container_definitions << {
+  dood_definition =  {
       Name: 'jenkins-docker-dood-slave',
       Memory: 2048,
       Image: "#{ciinabox_repo}base2/ciinabox-docker-slave:#{docker_slave_version}",
@@ -155,8 +155,8 @@ if defined? include_dood_slave and include_dood_slave
       Essential: false,
       Privileged: false
   }
-  container_definitions[:Environment] << { Name: 'USE_ECR_CREDENTIAL_HELPER', Value: 1 } if docker_slave_enable_ecr_credentials_helper
-
+  dood_definition[:Environment] << { Name: 'USE_ECR_CREDENTIAL_HELPER', Value: 1 } if docker_slave_enable_ecr_credentials_helper
+  container_definitions << dood_definition
   volumes << {
       Name: 'jenkins_dood_data',
       Host: {
