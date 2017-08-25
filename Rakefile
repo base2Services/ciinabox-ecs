@@ -106,8 +106,14 @@ namespace :ciinabox do
     stack_name = get_input("Enter the name of created Cloud Formation stack [ciinabox]:")
     stack_name = 'ciinabox' if(stack_name.strip == '')
 
-    include_dood_slave = yesno("Include docker-outside-of-docker slave?", true)
-    include_dind_slave = yesno("Include docker-in-docker slave?", true)
+    include_dood_slave = yesno("Include docker-outside-of-docker slave", true)
+    include_dind_slave = yesno("Include docker-in-docker slave", true)
+
+    use_iam_role = yesno("Use existing role for CIINABOX cluster", true)
+    if use_iam_role then
+      ciinabox_iam_role_name = get_input('Enter name of iam role to use with CIINABOX cluster [ciinabox]:')
+      ciinabox_iam_role_name = 'ciinabox' if ciinabox_iam_role_name.strip == ''
+    end
 
     ciinabox_docker_repo = get_input('Enter name of private docker repository for images [empty for public images]:')
 

@@ -53,7 +53,7 @@ CloudFormation {
     ecs_iam_role_permissions = ecs_iam_role_permissions + ecs_iam_role_permissions_extras
   end
 
-  ecs_role_policies = ecs_iam_role_permissions.collect { |p|
+  ecs_role_policies = ecs_iam_role_permissions.collect {|p|
     {
         PolicyName: p['name'],
         PolicyDocument: {
@@ -68,6 +68,8 @@ CloudFormation {
     }
   }
 
+  has_ciinabox_role_predefined = defined? ciinabox_iam_role_name
+
   Resource("Role") {
     Type 'AWS::IAM::Role'
     Property('AssumeRolePolicyDocument', {
@@ -79,11 +81,12 @@ CloudFormation {
     })
     Property('Path', '/')
     Property('Policies', ecs_role_policies)
-  }
+  } unless has_ciinabox_role_predefined
 
   InstanceProfile("InstanceProfile") {
     Path '/'
-    Roles [Ref('Role')]
+    Roles [Ref('Role')] unless has_ciinabox_role_predefined
+    Roles [ciinabox_iam_role_name] if has_ciinabox_role_predefined
   }
 
   EC2_Volume(volume_name) {
@@ -205,7 +208,8 @@ CloudFormation {
   end
 
   Output("ECSRole") {
-    Value(Ref('Role'))
+    Value(Ref('Role')) unless has_ciinabox_role_predefined
+    Value(ciinabox_iam_role_name) if has_ciinabox_role_predefined
   }
 
   Output("ECSInstanceProfile") {
