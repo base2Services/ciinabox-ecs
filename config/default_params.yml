@@ -127,6 +127,13 @@ docker_slave_version: 17.03.2-ce
 # If ecr credential helper is configured, it will fail on docker login command
 docker_slave_enable_ecr_credentials_helper: false
 
+# Uncomment line below if you want to use external IAM role for Instance Profile
+# Note that if this options is used, permissions from 'ecs_iam_role_permissions_default'
+# and 'ecs_iam_role_permissions_extras' are disregarded
+
+# ciinabox_iam_role_name: 'ciinabox'
+
+
 ecs_iam_role_permissions_default:
   - name: assume-role
     actions:
