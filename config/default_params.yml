@@ -60,7 +60,10 @@ ecs:
 lambdaSubnets:
   SubnetOctetA: "4"
   SubnetOctetB: "5"
-
+jenkinsSlaves:
+  SubnetOctetA: "4"
+  SubnetOctetB: "5"
+  
 #ciinabox environment config
 Mappings:
   EnvironmentType:
@@ -97,6 +100,14 @@ ecs_ami:
     ami: ami-809f84e6
   ap-southeast-1:
     ami: ami-19f7787a
+
+windows_jenkins_slave_ami:
+  ap-southeast-2:
+    ami: ami-10b1a873
+
+linux_jenkins_slave_ami:
+  ap-southeast-2:
+    ami: ami-30041c53
 
 #Webhook access only via https
 webHooks:

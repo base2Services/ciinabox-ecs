@@ -18,6 +18,7 @@ if not defined? ciinabox_repo
   ciinabox_repo=''
 end
 
+spot_slaves = (include_windows_spot_slave || include_linux_spot_slave) && !internal_elb ? true : false
 image = "#{ciinabox_repo}base2/ciinabox-jenkins:2"
 
 jenkins_java_opts = ''
@@ -181,6 +182,34 @@ CloudFormation {
   Parameter("ECSRole") {Type 'String'}
   Parameter("ServiceELB") {Type 'String'}
   Parameter('InternalELB') {Type 'String'} if internal_elb
+  Parameter('WindowsSlaveNLB') {Type 'String'} if spot_slaves
+  Parameter("VPC") {Type 'String'} if spot_slaves
+
+  if spot_slaves
+    ElasticLoadBalancingV2_TargetGroup('TargetGroup') {
+      HealthCheckIntervalSeconds 30
+      HealthCheckPort '50000'
+      HealthCheckProtocol 'TCP'
+      HealthCheckTimeoutSeconds 10
+      UnhealthyThresholdCount 3
+      HealthyThresholdCount 3
+      Port '50000'
+      Protocol 'TCP'
+      VpcId Ref('VPC')
+    }
+
+    ElasticLoadBalancingV2_Listener('TCP50000') {
+      DefaultActions [
+        {
+          TargetGroupArn: Ref('TargetGroup'),
+          Type: 'forward'
+        }
+      ]
+      LoadBalancerArn Ref('WindowsSlaveNLB')
+      Port 50000
+      Protocol 'TCP'
+    }
+  end
 
   Resource('JenkinsTask') {
     Type "AWS::ECS::TaskDefinition"
@@ -198,7 +227,10 @@ CloudFormation {
     Property('DesiredCount', 1)
     Property('TaskDefinition', Ref('JenkinsTask'))
     #For Role... Conditional. This parameter is required only if you specify the LoadBalancers property.
-    Property('Role', Ref('ECSRole')) if internal_elb and container_port != 0
+    Property('Role', Ref('ECSRole')) if internal_elb and container_port != 0 || spot_slaves
+    Property('LoadBalancers', [
+        {ContainerName: 'jenkins', ContainerPort: container_port, TargetGroupARN: Ref('TargetGroup')}
+    ]) if spot_slaves and container_port != 0
     Property('LoadBalancers', [
         {ContainerName: 'jenkins', ContainerPort: container_port, LoadBalancerName: Ref('InternalELB')}
     ]) if internal_elb and container_port != 0

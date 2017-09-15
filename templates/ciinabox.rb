@@ -52,6 +52,22 @@ CloudFormation do
     })
   }
 
+  Resource('JenkinsSlavesStack') {
+    Type 'AWS::CloudFormation::Stack'
+    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/jenkins-slaves.json")
+    Property('TimeoutInMinutes', 5)
+    Property('Parameters',{
+      ECSCluster: Ref(cluster_name),
+      VPC: FnGetAtt('VPCStack', 'Outputs.VPCId'),
+      RouteTablePrivateA: FnGetAtt('VPCStack', 'Outputs.RouteTablePrivateA'),
+      RouteTablePrivateB: FnGetAtt('VPCStack', 'Outputs.RouteTablePrivateB'),
+      SubnetPublicA: FnGetAtt('VPCStack', 'Outputs.SubnetPublicA'),
+      SubnetPublicB: FnGetAtt('VPCStack', 'Outputs.SubnetPublicB'),
+      SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane'),
+      SecurityGroupNatGateway: FnGetAtt('VPCStack', 'Outputs.SecurityGroupNatGateway')
+    })
+  }
+
   #These are the commona params for use below in "foreign templates
   base_params = {
     VPC: FnGetAtt('VPCStack', 'Outputs.VPCId'),

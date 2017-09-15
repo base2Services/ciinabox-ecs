@@ -1,5 +1,7 @@
 require 'cfndsl'
 
+spot_slaves = (include_windows_spot_slave || include_linux_spot_slave) && !internal_elb ? true : false
+
 CloudFormation {
 
   # Template metadata
@@ -229,6 +231,25 @@ CloudFormation {
     end
   end
 
+  if spot_slaves
+    Resource('WindowsSlaveNLB') {
+      Type 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+      Property('Type', 'network')
+      Property('Scheme', 'internal')
+      Property('Subnets',  [ Ref('ECSSubnetPrivateA'), Ref('ECSSubnetPrivateB') ])
+    }
+
+    Route53_RecordSet('WindowsSlaveNLBRecord') {
+      HostedZoneName FnJoin('', [ dns_domain, '.'])
+      Name FnJoin('', ["jenkins-slave.", dns_domain, '.'])
+      Type 'A'
+      AliasTarget ({
+        DNSName: FnGetAtt('WindowsSlaveNLB', 'DNSName'),
+        HostedZoneId: FnGetAtt('WindowsSlaveNLB','CanonicalHostedZoneID')
+      })
+    }
+  end
+
   Resource('ProxyTask') {
     Type "AWS::ECS::TaskDefinition"
     Property('ContainerDefinitions', [
@@ -291,6 +312,9 @@ CloudFormation {
         ServiceELB: Ref('CiinaboxProxyELB')
       }
       params['InternalELB'] = Ref('CiinaboxProxyELBInternal') if defined? internal_elb and internal_elb
+      params['WindowsSlaveNLB'] = Ref('WindowsSlaveNLB') if spot_slaves
+      params['VPC'] = Ref('VPC') if spot_slaves
+
       # ECS Task Def and Service  Stack
       Resource("#{service_name}Stack") {
         Type 'AWS::CloudFormation::Stack'
