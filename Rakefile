@@ -310,16 +310,16 @@ namespace :ciinabox do
 
   desc('Turn off your ciinabox environment')
   task :down do
-    check_active_ciinabox(config)
-    puts "Not Yet implemented...pull-request welcome"
-    #find all ASG and set min/max/desired to 0
+    # Use cfn_manage gem for this
+    command = 'stop'
+    start_stop_env(command, config)
   end
 
   desc('Turn on your ciinabox environment')
   task :up do
-    check_active_ciinabox(config)
-    puts "Not Yet implemented...pull-request welcome"
-    #find all ASG and set min/max/desired to 1
+    # Use cfn_manage gem for this
+    command = 'start'
+    start_stop_env(command, config)
   end
 
   desc('Deletes/tears down the ciinabox environment')
@@ -509,5 +509,14 @@ namespace :ciinabox do
     tmp_file << {config: config}.to_yaml
     tmp_file.rewind
     return tmp_file
+  end
+
+  def start_stop_env(command, config)
+    cmd = "cfn_manage #{command}-environment --stack-name #{config['stack_name']} "
+    cmd += " --source-bucket #{config['source_bucket']}"
+    cmd += " --region #{config['source_region']}"
+    cmd += " --profile #{config['aws_profile']}" if not config['aws_profile'].nil?
+    result = system(cmd)
+    exit -1 if not result
   end
 end

@@ -29,8 +29,7 @@ CloudFormation do
       RouteTablePrivateB: FnGetAtt('VPCStack', 'Outputs.RouteTablePrivateB'),
       SubnetPublicA: FnGetAtt('VPCStack', 'Outputs.SubnetPublicA'),
       SubnetPublicB: FnGetAtt('VPCStack', 'Outputs.SubnetPublicB'),
-      SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane'),
-      SecurityGroupNatGateway: FnGetAtt('VPCStack', 'Outputs.SecurityGroupNatGateway')
+      SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane')
     })
   }
 
@@ -48,7 +47,8 @@ CloudFormation do
       ECSSubnetPrivateB: FnGetAtt('ECSStack', 'Outputs.ECSSubnetPrivateB'),
       SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane'),
       SecurityGroupOps: FnGetAtt('VPCStack', 'Outputs.SecurityGroupOps'),
-      SecurityGroupDev: FnGetAtt('VPCStack', 'Outputs.SecurityGroupDev')
+      SecurityGroupDev: FnGetAtt('VPCStack', 'Outputs.SecurityGroupDev'),
+      SecurityGroupNatGateway: FnGetAtt('VPCStack', 'Outputs.SecurityGroupNatGateway')
     })
   }
 
@@ -66,6 +66,13 @@ CloudFormation do
     base_params.merge!("SubnetPublic#{az}" => FnGetAtt('VPCStack', "Outputs.SubnetPublic#{az}"))
     base_params.merge!("RouteTablePrivate#{az}" => FnGetAtt('VPCStack', "Outputs.RouteTablePrivate#{az}"))
   end
+
+  # Bastion if required
+  Resource('BastionStack') do
+    Type 'AWS::CloudFormation::Stack'
+    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/bastion.json")
+    Property('Parameters', base_params)
+  end if include_bastion_stack
 
   #Foreign templates
   #e.g CIINABOXES_DIR/CIINABOX/templates/x.rb
