@@ -16,6 +16,7 @@ CloudFormation {
   Parameter("SecurityGroupBackplane"){ Type 'String' }
   Parameter("SecurityGroupOps"){ Type 'String' }
   Parameter("SecurityGroupDev"){ Type 'String' }
+  Parameter('SecurityGroupNatGateway') { Type 'String' }
 
   Resource("ECSRole") {
     Type 'AWS::IAM::Role'
@@ -152,6 +153,15 @@ CloudFormation {
     end
   end
 
+  proxy_elb_sgs = [
+      Ref('SecurityGroupBackplane'),
+      Ref('SecurityGroupOps'),
+      Ref('SecurityGroupDev'),
+      Ref('SecurityGroupWebHooks')
+  ]
+
+  proxy_elb_sgs << Ref('SecurityGroupNatGateway') if allow_nat_connections
+
   Resource('CiinaboxProxyELB') {
     Type 'AWS::ElasticLoadBalancing::LoadBalancer'
     Property('Listeners', elb_listners)
@@ -163,12 +173,7 @@ CloudFormation {
       Timeout: '5'
     })
     Property('CrossZone',true)
-    Property('SecurityGroups',[
-      Ref('SecurityGroupBackplane'),
-      Ref('SecurityGroupOps'),
-      Ref('SecurityGroupDev'),
-      Ref('SecurityGroupWebHooks')
-    ])
+    Property('SecurityGroups', proxy_elb_sgs)
     Property('Subnets',[
       Ref('SubnetPublicA'),Ref('SubnetPublicB')
     ])

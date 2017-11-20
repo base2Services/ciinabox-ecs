@@ -7,7 +7,7 @@ cluster_name: ciinabox
 stack_name: ciinabox
 
 #log level - change to :debug to see the AWS commands being executed
-log_level: :info
+log_level: ':info'
 
 #change this to your own timezone
 timezone: GMT
@@ -133,6 +133,9 @@ docker_slave_enable_ecr_credentials_helper: false
 
 # ciinabox_iam_role_name: 'ciinabox'
 
+# Indicates whether bastion stack allowing user to access ciinabox host
+# from public network will be created or not
+include_bastion_stack: false
 
 ecs_iam_role_permissions_default:
   - name: assume-role
@@ -249,3 +252,23 @@ ecs_iam_role_permissions_default:
 #      CertName: x
 #      StackOctetA: 11
 #      StackOctetB: 12
+bastionInstanceType: t2.micro
+bastionAMI:
+  us-east-1:
+   ami: ami-c5062ba0
+  us-east-2:
+   ami: ami-c5062ba0
+  us-west-2:
+   ami: ami-e689729e
+  us-west-1:
+   ami: ami-02eada62
+  ap-southeast-1:
+   ami: ami-0797ea64
+  ap-southeast-2:
+   ami: ami-8536d6e7
+  eu-west-1:
+   ami: ami-acd005d5
+  eu-west-2:
+   ami: ami-1a7f6d7e
+  eu-central-1:
+   ami: ami-c7ee5ca8

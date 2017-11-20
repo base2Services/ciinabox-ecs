@@ -18,7 +18,7 @@ requires ruby 2.1+
 1. git clone https://github.com/base2Services/ciinabox-ecs.git
 2. cd ciinabox-ecs
 3. bundle install
-4. rake -T
+4. bundle exec rake -T
 
 If setting your own parameters and additional services, they should be configured as such:
 
@@ -27,8 +27,8 @@ ciinaboxes/ciinabox_name/config/params.yml
 
 e.g:
 ```ruby
-log_level: :debug
-timezone: Australia/Melbourne
+log_level: ':debug'
+timezone: 'Australia/Melbourne'
 ```
 
 #### User-defined services:
@@ -51,6 +51,18 @@ services:
 Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
 
 ## Getting Started
+
+### Quick setup
+
+You can be guided through full installation of ciinabox by running rake `ciinabox:full_install` task. Interactive 
+command line prompt will offer you defaults for most of required options. 
+
+```bash
+$ bundle exec rake ciinabox:full_install
+
+```
+
+### Step by step setup
 
 1. Initialize/Create a new ciinabox environment. Please note that any user-defined services and parameters will be merged during this task into the default templates
   ```bash
@@ -187,10 +199,10 @@ A common update would be to lock down ip access to your ciinabox environment
 
 2. update your ciinabox
   ```bash
-  $ rake ciinabox:generate
-  $ rake ciinabox:deploy
-  $ rake ciinabox:update
-  $ rake ciinabox:status  
+  $ bundle exec rake ciinabox:generate
+  $ bundle exec rake ciinabox:deploy
+  $ bundle exec rake ciinabox:update
+  $ bundle exec rake ciinabox:status  
   ```
 
 ### ciinabox:tear_down
@@ -203,11 +215,11 @@ Displays the current active ciinabox environment and allows you to change to a d
 
 ### ciinabox:up
 
-Not Yet implemented...pull-request welcome
+Relies on [cfn_manage](https://rubygems.org/gems/cfn_manage) gem to bring stack up. Stack needs to be stopped using `ciinabox:down` task
 
 ### ciinabox:down
 
-Not Yet implemented...pull-request welcome
+Relies on [cfn_manage](https://rubygems.org/gems/cfn_manage) gem to stop the stack. Will set ASG size to 0 (and optionally set bastion ASG size to 0).
 
 ## Adding Custom Templates per ciinabox
 
@@ -269,6 +281,46 @@ internal_elb: false
 
 # Ciinabox configuration
 
+## Bastion (Jumpbox) instance
+
+If you have need to access ECS Cluster instance running Jenkins server via secure shell, you may do so by logging
+into bastion host first. By default, bastion is disabled for ciinabox Cloud Formation stack, however you can enable
+it by using `bastion_stack` configuration key. Bastion will be launched as part of AutoScaling Group of size 1,
+allowing it to self heal in case of system or instance check failure. 
+
+```yaml
+include_bastion_stack: true
+```
+
+It is also possible to override other bastion host parameters, such as Amazon Machine Image and instance type 
+used for Launch Configuration. Defaults are below
+
+```yaml
+bastionInstanceType: t2.micro
+# Amazon Linux 2017.09
+bastionAMI:
+  us-east-1:
+   ami: ami-c5062ba0
+  us-east-2:
+   ami: ami-c5062ba0
+  us-west-2:
+   ami: ami-e689729e
+  us-west-1:
+   ami: ami-02eada62
+  ap-southeast-1:
+   ami: ami-0797ea64
+  ap-southeast-2:
+   ami: ami-8536d6e7
+  eu-west-1:
+   ami: ami-acd005d5
+  eu-west-2:
+   ami: ami-1a7f6d7e
+  eu-central-1:
+   ami: ami-c7ee5ca8
+
+```
+
+
 ## IAM Roles
 
 Default IAM permission for ciinabox stack running Jenkins server are set in `config/default_params.yml`, under
@@ -284,6 +336,17 @@ ecs_iam_role_permissions_extras:
     actions:
       - s3:PutBucketPolicy
 
+```
+
+## Allowing connections from NAT gateway
+
+If ECS Cluster and running Jenkins will try to access itself via public route and url, you will need
+to allow such traffic using Security Group rules. As NAT Gateway is used for sending all requests to internet,
+it is NAT Gateways IP address that should be added to Group rules. Use `allow_nat_connections` configuration 
+key for this.
+
+```yaml
+allow_nat_connections: false
 ```
 
 

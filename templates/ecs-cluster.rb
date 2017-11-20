@@ -24,7 +24,6 @@ CloudFormation {
   Parameter("SubnetPublicA") {Type 'String'}
   Parameter("SubnetPublicB") {Type 'String'}
   Parameter("SecurityGroupBackplane") {Type 'String'}
-  Parameter('SecurityGroupNatGateway') {Type 'String'}
 
 
   # Global mappings
@@ -125,7 +124,7 @@ CloudFormation {
     }
   end
 
-  ecs_sgs = (defined? allow_nat_connections and allow_nat_connections) ? [Ref('SecurityGroupBackplane'), Ref('SecurityGroupNatGateway')] : [Ref('SecurityGroupBackplane')]
+  ecs_sgs = [Ref('SecurityGroupBackplane')]
 
   LaunchConfiguration(:LaunchConfig) {
     ImageId FnFindInMap('ecsAMI', Ref('AWS::Region'), 'ami')
