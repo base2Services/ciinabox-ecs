@@ -132,10 +132,16 @@ docker_slave_enable_ecr_credentials_helper: false
 # and 'ecs_iam_role_permissions_extras' are disregarded
 
 # ciinabox_iam_role_name: 'ciinabox'
-
 # Indicates whether bastion stack allowing user to access ciinabox host
 # from public network will be created or not
 include_bastion_stack: false
+
+# if set to true, docker volume will be formatted as ext4 and volume-mounted under /var/lib/docker.
+# Used if ECS AMI is configured with overlay2 driver. Defaults to false, as Amazon ECS AMIs (default)
+# are using devicemapper, which gets configured automatically. Main advantage of using overlay2 over devicemapper is
+# device size limitation
+ecs_docker_volume_volumemount: false
+
 
 ecs_iam_role_permissions_default:
   - name: assume-role
