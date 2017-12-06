@@ -67,6 +67,9 @@ namespace :ciinabox do
 
     CfnDsl::RakeTask.new do |t|
       extras = [[:yaml,'config/default_params.yml']]
+      if File.exist? "#{ciinaboxes_dir}/ciinabox_config.yml"
+        extras << [:yaml, "#{ciinaboxes_dir}/ciinabox_config.yml"]
+      end
       (Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].map { |f| [:yaml,f]}).each {|c| extras<<c}
       extras << [:ruby,'ext/helper.rb']
       extras << [:yaml, tmp_file.path]

@@ -104,7 +104,7 @@ CloudFormation {
   }
 
   ecs_block_device_mapping = []
-
+  user_data_init_devices = ''
   if defined? ecs_root_volume_size and ecs_root_volume_size > 8
     ecs_block_device_mapping << {
         "DeviceName" => "/dev/xvda",
@@ -122,6 +122,10 @@ CloudFormation {
             "VolumeType" => "gp2"
         }
     }
+    if (defined? 'ecs_docker_volume_volumemount') and (binding.eval('ecs_docker_volume_volumemount') == true)
+      user_data_init_devices = "mkfs.ext4 /dev/xvdcz && " +
+                               "mount /dev/xvdcz /var/lib/docker\n"
+    end
   end
 
   ecs_sgs = [Ref('SecurityGroupBackplane')]
@@ -148,6 +152,7 @@ CloudFormation {
         "mkdir -p /data\n",
         "mount /data && echo \"ECS Data volume already formatted\" || mkfs -t ext4 /dev/xvdf\n",
         "mount -a && echo 'mounting ECS Data volume' || echo 'failed to mount ECS Data volume'\n",
+        "#{user_data_init_devices}",
         "export BOOTSTRAP=/data/bootstrap \n",
         "if [ ! -e \"$BOOTSTRAP\" ]; then echo \"boostrapping\"; chmod -R 777 /data; mkdir -p /data/jenkins; chown -R 1000:1000 /data/jenkins;  touch $BOOTSTRAP; fi \n",
         "ifconfig eth0 mtu 1500\n",
