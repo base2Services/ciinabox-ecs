@@ -106,7 +106,7 @@ if defined? include_diind_slave and include_diind_slave
   container_definitions[0][:Links] << 'jenkins-docker-dind-slave'
   dind_definition = {
       Name: 'jenkins-docker-dind-slave',
-      Memory: 2048,
+      Memory: service['SlaveContainerMemory'] || 2048,
       Image: "#{ciinabox_repo}base2/ciinabox-docker-slave:#{docker_slave_version}",
       Environment: [{Name: 'RUN_DOCKER_IN_DOCKER', Value: 1}],
       Essential: false,
@@ -137,7 +137,7 @@ if defined? include_dood_slave and include_dood_slave
   container_definitions[0][:Links] << 'jenkins-docker-dood-slave'
   dood_definition =  {
       Name: 'jenkins-docker-dood-slave',
-      Memory: 2048,
+      Memory: service['SlaveContainerMemory'] || 2048,,
       Image: "#{ciinabox_repo}base2/ciinabox-docker-slave:#{docker_slave_version}",
       Environment: [{Name: 'RUN_DOCKER_IN_DOCKER', Value: 0}],
       MountPoints: [
