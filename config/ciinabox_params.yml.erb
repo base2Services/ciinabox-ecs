@@ -37,7 +37,7 @@ include_diind_slave: <%= include_dind_slave %>
 include_dood_slave: <%= include_dood_slave %>
 include_bastion_stack: false
 
-<% if defined? ciinabox_iam_role_name and ciinabox_iam_role_name.strip != '' %>
+<% if (defined? ciinabox_iam_role_name) and (not ciinabox_iam_role_name.nil?) and (ciinabox_iam_role_name.strip != '') %>
 ciinabox_iam_role_name: <%= ciinabox_iam_role_name %>
 <% end %>
 #add if you want volatile jenkins docker slave -- Note: by default jenkins docker slave mounts /data/jenkins-dind (on host) to /var/lib/docker (on container)
