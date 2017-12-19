@@ -96,11 +96,17 @@ CloudFormation {
       SnapshotId ecs_data_volume_snapshot
     end
     AvailabilityZone FnSelect(0, FnGetAZs(""))
-    addTag("Name", "ciinabox-ecs-data-xx")
-    addTag("Environment", 'ciinabox')
-    addTag("EnvironmentType", 'ciinabox')
-    addTag("Role", "ciinabox-data")
-    addTag("MakeSnapshot", "true")
+    addTag('Name', 'ciinabox-ecs-data-xx')
+    addTag('Environment', 'ciinabox')
+    addTag('EnvironmentType', 'ciinabox')
+    addTag('Role', 'ciinabox-data')
+    if data_volume_shelvery_backups
+      addTag('shelvery:create_backup','true')
+      addTag('shelvery:config:shelvery_keep_daily_backups', data_volume_retain_daily_backups)
+      addTag('shelvery:config:shelvery_keep_weekly_backups', data_volume_retain_weekly_backups)
+      addTag('shelvery:config:shelvery_keep_monthly_backups', data_volume_reatin_monthly_backups)
+    end
+
   }
 
   ecs_block_device_mapping = []

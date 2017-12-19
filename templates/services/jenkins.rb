@@ -18,7 +18,7 @@ if not defined? ciinabox_repo
   ciinabox_repo=''
 end
 
-image = "#{ciinabox_repo}base2/ciinabox-jenkins:2"
+image = "#{ciinabox_repo}base2/ciinabox-jenkins:lts"
 
 jenkins_java_opts = ''
 memory = 2048

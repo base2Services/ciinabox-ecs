@@ -143,6 +143,14 @@ include_bastion_stack: false
 ecs_docker_volume_volumemount: false
 
 
+# if set to true, EBS data volumes will be tagged to be backed up with shelvery aws backup manager
+# also, retention periods can be controlled from here
+data_volume_shelvery_backups: true
+data_volume_retain_daily_backups: 7
+data_volume_retain_weekly_backups: 4
+data_volume_reatin_monthly_backups: 12
+
+
 ecs_iam_role_permissions_default:
   - name: assume-role
     actions:
@@ -261,7 +269,7 @@ ecs_iam_role_permissions_default:
 bastionInstanceType: t2.micro
 bastionAMI:
   us-east-1:
-   ami: ami-c5062ba0
+   ami: ami-55ef662f
   us-east-2:
    ami: ami-c5062ba0
   us-west-2:
