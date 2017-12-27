@@ -12,7 +12,6 @@ services:
       # InstancePort: 50000
       # Protocol: TCP
 
-
 #example for Internal Port for Jenkins
 # - jenkins:
 #    LoadBalancerPort: 50000

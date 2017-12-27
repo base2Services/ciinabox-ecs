@@ -134,7 +134,23 @@ CloudFormation {
     end
   end
 
-  ecs_sgs = [Ref('SecurityGroupBackplane')]
+  ecs_allow_sg_ingress = [
+    { IpProtocol: 'tcp', FromPort: '32768', ToPort: '65535', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
+  ]
+
+  Resource("SecurityGroupECS") {
+    Type 'AWS::EC2::SecurityGroup'
+    Property('VpcId', Ref('VPC'))
+    Property('GroupDescription', 'ECS SG')
+    Property('SecurityGroupIngress', ecs_allow_sg_ingress)
+  }
+
+  ecs_sgs = [Ref('SecurityGroupBackplane'), Ref('SecurityGroupECS')]
+
+  Resource("ECSENI") {
+    Type 'AWS::EC2::NetworkInterface'
+    Property('SubnetId', Ref('SubnetPrivateA'))
+  }
 
   LaunchConfiguration(:LaunchConfig) {
     ImageId FnFindInMap('ecsAMI', Ref('AWS::Region'), 'ami')
@@ -148,12 +164,14 @@ CloudFormation {
     UserData FnBase64(FnJoin("", [
         "#!/bin/bash\n",
         "echo ECS_CLUSTER=", Ref('ECSCluster'), " >> /etc/ecs/ecs.config\n",
-        "INSTANCE_ID=`/opt/aws/bin/ec2-metadata -i | cut -f2 -d: | cut -f2 -d-`\n",
+        "INSTANCE_ID=$(echo `/opt/aws/bin/ec2-metadata -i | cut -f2 -d:`)\n",
         "PRIVATE_IP=`/opt/aws/bin/ec2-metadata -o | cut -f2 -d: | cut -f2 -d-`\n",
         "yum install -y python-pip\n",
         "python-pip install --upgrade awscli\n",
-        "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref(volume_name), " --instance-id i-${INSTANCE_ID} --device /dev/sdf\n",
+        "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref(volume_name), " --instance-id ${INSTANCE_ID} --device /dev/sdf\n",
         "echo 'waiting for ECS Data volume to attach' && sleep 20\n",
+        "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-network-interface --network-interface-id ",  Ref('ECSENI'), " --instance-id ${INSTANCE_ID} --device-index 1\n",
+        "echo 'waiting for ECS ENI to attach' && sleep 20\n",
         "echo '/dev/xvdf   /data        ext4    defaults,nofail 0   2' >> /etc/fstab\n",
         "mkdir -p /data\n",
         "mount /data && echo \"ECS Data volume already formatted\" || mkfs -t ext4 /dev/xvdf\n",
@@ -220,6 +238,10 @@ CloudFormation {
   Output("ECSRole") {
     Value(Ref('Role')) unless has_ciinabox_role_predefined
     Value(ciinabox_iam_role_name) if has_ciinabox_role_predefined
+  }
+
+  Output("ECSENIPrivateIpAddress") {
+    Value(FnGetAtt('ECSENI', 'PrimaryPrivateIpAddress'))
   }
 
   Output("ECSInstanceProfile") {

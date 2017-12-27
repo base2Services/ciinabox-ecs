@@ -13,6 +13,7 @@ CloudFormation {
   Parameter("SubnetPublicB"){ Type 'String' }
   Parameter("ECSSubnetPrivateA"){ Type 'String' }
   Parameter("ECSSubnetPrivateB"){ Type 'String' }
+  Parameter("ECSENIPrivateIpAddress"){ Type 'String' }
   Parameter("SecurityGroupBackplane"){ Type 'String' }
   Parameter("SecurityGroupOps"){ Type 'String' }
   Parameter("SecurityGroupDev"){ Type 'String' }
@@ -61,6 +62,13 @@ CloudFormation {
             {
               Effect: 'Allow',
               Action: [
+                "ec2:AttachNetworkInterface",
+                "ec2:CreateNetworkInterface",
+                "ec2:CreateNetworkInterfacePermission",
+                "ec2:DeleteNetworkInterface",
+                "ec2:DeleteNetworkInterfacePermission",
+                "ec2:Describe*",
+                "ec2:DetachNetworkInterface",
                 "ecs:CreateCluster",
                 "ecs:DeregisterContainerInstance",
                 "ecs:DiscoverPollEndpoint",
@@ -71,8 +79,10 @@ CloudFormation {
                 "ec2:AuthorizeSecurityGroupIngress",
                 "ec2:Describe*",
                 "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                "elasticloadbalancing:DeregisterTargets",
                 "elasticloadbalancing:Describe*",
                 "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                "elasticloadbalancing:RegisterTargets",
                 "ecr:GetAuthorizationToken",
                 "ecr:BatchCheckLayerAvailability",
                 "ecr:GetDownloadUrlForLayer",
@@ -296,6 +306,11 @@ CloudFormation {
         ServiceELB: Ref('CiinaboxProxyELB')
       }
       params['InternalELB'] = Ref('CiinaboxProxyELBInternal') if defined? internal_elb and internal_elb
+      if (defined? service['params']) and service['params'].kind_of?(Array)
+        service['params'].each do |param|
+          params.merge!(param)
+        end
+      end
       # ECS Task Def and Service  Stack
       Resource("#{service_name}Stack") {
         Type 'AWS::CloudFormation::Stack'
