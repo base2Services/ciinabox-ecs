@@ -45,6 +45,7 @@ CloudFormation do
       SubnetPublicB: FnGetAtt('VPCStack', 'Outputs.SubnetPublicB'),
       ECSSubnetPrivateA: FnGetAtt('ECSStack', 'Outputs.ECSSubnetPrivateA'),
       ECSSubnetPrivateB: FnGetAtt('ECSStack', 'Outputs.ECSSubnetPrivateB'),
+      ECSENIPrivateIpAddress: FnGetAtt('ECSStack', 'Outputs.ECSENIPrivateIpAddress'),
       SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane'),
       SecurityGroupOps: FnGetAtt('VPCStack', 'Outputs.SecurityGroupOps'),
       SecurityGroupDev: FnGetAtt('VPCStack', 'Outputs.SecurityGroupDev'),

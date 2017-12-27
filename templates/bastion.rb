@@ -42,6 +42,18 @@ CloudFormation do
                     }
                 ]
             }
+        },
+        {
+            PolicyName: 'describe-ec2-autoscaling',
+            PolicyDocument: {
+                Statement: [
+                    {
+                        Effect:'Allow',
+                        Action: ['ec2:Describe*', 'autoscaling:Describe*' ],
+                        Resource: [ '*' ]
+                    }
+                ]
+            }
         }
     ])
   }
