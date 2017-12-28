@@ -160,7 +160,7 @@ mounts = {
 container_definitions = {}
 
 ['drone-server', 'drone-agent'].each do | task |
-  definition = service['tasks'] ? (service['tasks'][task] || {}) : {}
+  definition = (service && service['tasks']) ? (service['tasks'][task] || {}) : {}
   container_definition = [{
     Name: task,
     Links: [],
