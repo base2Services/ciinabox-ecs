@@ -30,6 +30,19 @@ drone_server_ext_ports = [ '8000' ]
 drone_server_int_ports = [ '9000' ]
 drone_server_mappings = []
 drone_agent_mappings = []
+drone_params = [
+  { VPC: { Ref: "VPC" } },
+  { SubnetPublicA: { Ref: "SubnetPublicA" } },
+  { SubnetPublicB: { Ref: "SubnetPublicB" } },
+  { ECSSubnetPrivateA: { Ref: "ECSSubnetPrivateA" } },
+  { ECSSubnetPrivateB: { Ref: "ECSSubnetPrivateB"} },
+  { SecurityGroupBackplane: { Ref: "SecurityGroupBackplane" } },
+  { SecurityGroupOps: { Ref: "SecurityGroupOps" } },
+  { SecurityGroupDev: { Ref: "SecurityGroupDev" } },
+  { SecurityGroupNatGateway: { Ref: "SecurityGroupNatGateway" } },
+  { SecurityGroupWebHooks: { Ref: "SecurityGroupWebHooks" } },
+  { ECSENIPrivateIpAddress: { Ref: "ECSENIPrivateIpAddress" } }
+]
 
 # resource allocations
 memory = 512
@@ -37,6 +50,10 @@ cpu = 256
 
 # look up service
 service = lookup_service('drone', services)
+
+if service and service['params'].kind_of?(Array)
+  drone_params = drone_params | service['params']
+end
 
 if service and service['tasks']
   tasks = service['tasks']
@@ -184,18 +201,13 @@ CloudFormation {
   Parameter("ECSCluster") {Type 'String'}
   Parameter("ECSRole") {Type 'String'}
   Parameter("ServiceELB") {Type 'String'}
-  Parameter("VPC") {Type 'String'}
-  Parameter("SubnetPublicA"){Type 'String'}
-  Parameter("SubnetPublicB"){Type 'String'}
-  Parameter("ECSSubnetPrivateA"){Type 'String'}
-  Parameter("ECSSubnetPrivateB"){Type 'String'}
-  Parameter("SecurityGroupBackplane"){ Type 'String' }
-  Parameter("SecurityGroupOps"){ Type 'String' }
-  Parameter("SecurityGroupDev"){ Type 'String' }
-  Parameter('SecurityGroupNatGateway') { Type 'String' }
-  Parameter('SecurityGroupWebHooks') { Type 'String' }
-  Parameter('ECSENIPrivateIpAddress') { Type 'String' }
   Parameter('InternalELB') {Type 'String'} if internal_elb
+
+  drone_params.each do |param|
+    param.keys.each do |key|
+      Parameter(key) {Type 'String'}
+    end
+  end
 
   # Mapping
   Mapping('EnvironmentType', Mappings['EnvironmentType'])
