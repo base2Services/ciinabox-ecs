@@ -6,6 +6,7 @@ and managing a bunch of CI tools in AWS using the Elastic Container Service (ECS
 Right Now ciinabox supports deploying:
 
  * [jenkins](https://jenkins.io/)
+ * [drone](http://docs.drone.io)
  * [bitbucket](https://www.atlassian.com/software/bitbucket)
  * [hawtio](http://hawt.io/)
  * [nexus](http://www.sonatype.org/nexus/)
