@@ -100,7 +100,20 @@ ecs_ami:
 
 #Webhook access only via https
 webHooks:
-  - 192.30.252.0/22 #github
+  #github
+  - 192.30.252.0/22
+  #bitbucket cloud
+  - 104.192.142.0/24
+  - 104.192.136.0/21
+  - 131.103.26.0/23
+  - 131.103.26.0/24
+  - 131.103.27.0/24
+  - 131.103.29.0/24
+  - 165.254.226.0/23
+  - 165.254.226.0/24
+  - 165.254.227.0/24
+  - 131.103.28.0/24
+  - 185.166.140.0/22
 
 # if set to true, security group allowing connections from NAT gateway will be assigned to
 # ecs cluster (useful for windows jenkins slaves)

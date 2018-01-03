@@ -31,7 +31,7 @@ if defined? internal_elb and internal_elb
 end
 port_mappings = []
 
-if service
+if defined? service
   jenkins_java_opts = service['JAVA_OPTS'] || ''
   image = service['ContainerImage'] || image
   memory = service['ContainerMemory'] || 2048
