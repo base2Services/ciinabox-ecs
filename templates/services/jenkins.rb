@@ -22,6 +22,7 @@ image = "#{ciinabox_repo}base2/ciinabox-jenkins:lts"
 
 jenkins_java_opts = ''
 memory = 2048
+slave_memory = 2048
 cpu = 300
 container_port = 0
 service = lookup_service('jenkins', services)
@@ -35,6 +36,7 @@ if defined? service
   jenkins_java_opts = service['JAVA_OPTS'] || ''
   image = service['ContainerImage'] || image
   memory = service['ContainerMemory'] || 2048
+  slave_memory = service['SlaveContainerMemory'] || 2048
   cpu = service['ContainerCPU'] || 300
 
   if service['InstancePort']
@@ -106,7 +108,7 @@ if defined? include_diind_slave and include_diind_slave
   container_definitions[0][:Links] << 'jenkins-docker-dind-slave'
   dind_definition = {
       Name: 'jenkins-docker-dind-slave',
-      Memory: 2048,
+      Memory: slave_memory,
       Image: "#{ciinabox_repo}base2/ciinabox-docker-slave:#{docker_slave_version}",
       Environment: [{Name: 'RUN_DOCKER_IN_DOCKER', Value: 1}],
       Essential: false,
@@ -137,7 +139,7 @@ if defined? include_dood_slave and include_dood_slave
   container_definitions[0][:Links] << 'jenkins-docker-dood-slave'
   dood_definition =  {
       Name: 'jenkins-docker-dood-slave',
-      Memory: 2048,
+      Memory: slave_memory,
       Image: "#{ciinabox_repo}base2/ciinabox-docker-slave:#{docker_slave_version}",
       Environment: [{Name: 'RUN_DOCKER_IN_DOCKER', Value: 0}],
       MountPoints: [
