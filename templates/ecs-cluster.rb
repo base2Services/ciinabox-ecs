@@ -150,6 +150,7 @@ CloudFormation {
   Resource("ECSENI") {
     Type 'AWS::EC2::NetworkInterface'
     Property('SubnetId', Ref('SubnetPrivateA'))
+    Property('GroupSet', ecs_sgs)
   }
 
   LaunchConfiguration(:LaunchConfig) {
