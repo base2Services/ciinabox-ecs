@@ -49,6 +49,8 @@ services:
   - nexus:
 ```
 
+Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
+
 Note the drone service requires a minimum yaml configuration of below
 ```yml
 services:
@@ -103,8 +105,6 @@ to further configure drone ci refer to the drone ci's environment variable in th
           env:
             DRONE_SECRET: base2services # if this value is not specified, a secure random hex will be used
 ```
-
-Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
 
 ## Getting Started
 
