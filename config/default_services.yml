@@ -19,3 +19,44 @@ services:
 #    Protocol: TCP
 # needs internal_elb: true
 # will trigger this 2nd hostname for jenkins internal-jenkins.#{dns_domain}
+
+#example for drone
+  # - drone:
+  #     params:
+  #       -
+  #         VPC:
+  #           Ref: VPC
+  #       -
+  #         SubnetPublicA:
+  #           Ref: SubnetPublicA
+  #       -
+  #         SubnetPublicB:
+  #           Ref: SubnetPublicB
+  #       -
+  #         ECSSubnetPrivateA:
+  #           Ref: ECSSubnetPrivateA
+  #       -
+  #         ECSSubnetPrivateB:
+  #           Ref: ECSSubnetPrivateB
+  #       -
+  #         SecurityGroupBackplane:
+  #           Ref: SecurityGroupBackplane
+  #       -
+  #         SecurityGroupOps:
+  #           Ref: SecurityGroupOps
+  #       -
+  #         SecurityGroupDev:
+  #           Ref: SecurityGroupDev
+  #       -
+  #         SecurityGroupNatGateway:
+  #           Ref: SecurityGroupNatGateway
+  #       -
+  #         SecurityGroupWebHooks:
+  #           Ref: SecurityGroupWebHooks
+  #       -
+  #         ECSENIPrivateIpAddress:
+  #           Ref: ECSENIPrivateIpAddress
+  #     tasks:
+  #       drone-server:
+  #         env:
+  #           DRONE_OPEN: true

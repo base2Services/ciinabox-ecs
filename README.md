@@ -49,14 +49,69 @@ services:
   - nexus:
 ```
 
+Note the drone service requires a minimum yaml configuration of below
+```yml
+services:
+  - drone:
+      params:
+        -
+          VPC:
+            Ref: VPC
+        -
+          SubnetPublicA:
+            Ref: SubnetPublicA
+        -
+          SubnetPublicB:
+            Ref: SubnetPublicB
+        -
+          ECSSubnetPrivateA:
+            Ref: ECSSubnetPrivateA
+        -
+          ECSSubnetPrivateB:
+            Ref: ECSSubnetPrivateB
+        -
+          SecurityGroupBackplane:
+            Ref: SecurityGroupBackplane
+        -
+          SecurityGroupOps:
+            Ref: SecurityGroupOps
+        -
+          SecurityGroupDev:
+            Ref: SecurityGroupDev
+        -
+          SecurityGroupNatGateway:
+            Ref: SecurityGroupNatGateway
+        -
+          SecurityGroupWebHooks:
+            Ref: SecurityGroupWebHooks
+        -
+          ECSENIPrivateIpAddress:
+            Ref: ECSENIPrivateIpAddress
+      tasks:
+        drone-server:
+          env:
+            DRONE_OPEN: true
+```
+to further configure drone ci refer to the drone ci's environment variable in the documentation http://docs.drone.io/installation/, you can add/override drone's environment variable to their corresponding yaml section (`drone-server` and `drone-agent`), example
+```yml
+      tasks:
+        drone-server:
+          env:
+            DRONE_OPEN: true
+            DRONE_SECRET: base2services # if this value is not specified, a secure random hex will be used
+        drone-agent:
+          env:
+            DRONE_SECRET: base2services # if this value is not specified, a secure random hex will be used
+```
+
 Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
 
 ## Getting Started
 
 ### Quick setup
 
-You can be guided through full installation of ciinabox by running rake `ciinabox:full_install` task. Interactive 
-command line prompt will offer you defaults for most of required options. 
+You can be guided through full installation of ciinabox by running rake `ciinabox:full_install` task. Interactive
+command line prompt will offer you defaults for most of required options.
 
 ```bash
 $ bundle exec rake ciinabox:full_install
@@ -287,13 +342,13 @@ internal_elb: false
 If you have need to access ECS Cluster instance running Jenkins server via secure shell, you may do so by logging
 into bastion host first. By default, bastion is disabled for ciinabox Cloud Formation stack, however you can enable
 it by using `bastion_stack` configuration key. Bastion will be launched as part of AutoScaling Group of size 1,
-allowing it to self heal in case of system or instance check failure. 
+allowing it to self heal in case of system or instance check failure.
 
 ```yaml
 include_bastion_stack: true
 ```
 
-It is also possible to override other bastion host parameters, such as Amazon Machine Image and instance type 
+It is also possible to override other bastion host parameters, such as Amazon Machine Image and instance type
 used for Launch Configuration. Defaults are below
 
 ```yaml
@@ -325,7 +380,7 @@ bastionAMI:
 ## IAM Roles
 
 Default IAM permission for ciinabox stack running Jenkins server are set in `config/default_params.yml`, under
-`ecs_iam_role_permissions_default` configuration key. You can extend this permissions on a ciinabox level 
+`ecs_iam_role_permissions_default` configuration key. You can extend this permissions on a ciinabox level
 using `ecs_iam_role_permissions_extras` key. E.g.
 
 (within `$CIINABOXES_DIR/$CIINABOX/config/params.yml`)
@@ -343,11 +398,9 @@ ecs_iam_role_permissions_extras:
 
 If ECS Cluster and running Jenkins will try to access itself via public route and url, you will need
 to allow such traffic using Security Group rules. As NAT Gateway is used for sending all requests to internet,
-it is NAT Gateways IP address that should be added to Group rules. Use `allow_nat_connections` configuration 
+it is NAT Gateways IP address that should be added to Group rules. Use `allow_nat_connections` configuration
 key for this.
 
 ```yaml
 allow_nat_connections: false
 ```
-
-
