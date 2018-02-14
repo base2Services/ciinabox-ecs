@@ -1,7 +1,7 @@
 require 'cfndsl'
 require 'digest'
 require 'base64'
-
+require_relative '../ext/policies'
 class Lambdas
 
 
