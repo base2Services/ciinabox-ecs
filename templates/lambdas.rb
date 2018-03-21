@@ -59,83 +59,104 @@ class Lambdas
         }
       end
 
-      config['lambdas']['roles'].each do |lambda_role, role_config|
-        Resource("LambdaRole#{lambda_role}") {
-          Type 'AWS::IAM::Role'
-          Property('AssumeRolePolicyDocument', {
-              Statement: [
-                  Effect: 'Allow',
-                  Principal: { Service: ['lambda.amazonaws.com'] },
-                  Action: ['sts:AssumeRole']
-              ]
-          })
-          Property('Path', '/')
-          Property('Policies', Policies.new.create_policies(role_config['policies_inline']))
+      config['lambdas']['functions'].each do |name, lambda_config|
 
-          if (role_config['policies_managed'] != nil)
+
+        environment = lambda_config['environment'] || {}
+        environment['LAMBDA_PACKAGE_TIMESTAMP'] = lambda_config['timestamp']
+        environment['LAMBDA_PACKAGE_SHA256'] = lambda_config['code_sha256']
+
+        # Create Role for Lambda function
+        role_name = lambda_config['role']
+        role_config = config['lambdas']['roles'][role_name]
+        Resource("LambdaRole#{role_name}") do
+          Type 'AWS::IAM::Role'
+          Property('AssumeRolePolicyDocument', Statement: [
+              Effect: 'Allow',
+              Principal: { Service: ['lambda.amazonaws.com'] },
+              Action: ['sts:AssumeRole']
+          ])
+          Property('Path', '/')
+          unless role_config['policies_inline'].nil?
+            Property('Policies', Policies.new.create_policies(role_config['policies_inline']))
+          end
+
+          unless role_config['policies_managed'].nil?
             Property('ManagedPolicyArns', role_config['policies_managed'])
           end
-        }
-      end
+        end
 
-
-      config['lambdas']['functions'].each do |name, lambda_config|
-        timeout = lambda_config['timeout'] != nil ? lambda_config['timeout'] : 10
-        memory = lambda_config['memory'] != nil ? lambda_config['memory'] : 128
-        code = IO.read("#{ciinaboxes_dir}/#{config['ciinabox_name']}/#{lambda_config['code']}")
-        code.force_encoding('UTF-8')
-        environment = lambda_config['environment'] != nil ? lambda_config['environment'] : {}
-        Resource(name) do
+        # Create Lambda function
+        function_name = name
+        Resource(function_name) do
           Type 'AWS::Lambda::Function'
-          Property('Code', {
-              S3Bucket: source_bucket,
-              S3Key: "ciinabox/#{config['ciinabox_version']}/lambdas/#{name}/#{lambda_config['timestamp']}/src.zip"
-          })
-          Property('Environment', {
-              Variables: Hash[environment.collect { |k, v| [k.upcase, v] }]
-          })
-          Property('Handler', lambda_config['handler'])
-          Property('MemorySize', memory)
+          Property('Code', S3Bucket: source_bucket,
+              S3Key: "ciinabox/#{config['ciinabox_version']}/lambdas/#{name}/#{lambda_config['timestamp']}/src.zip")
+          Property('Environment', Variables: Hash[environment.collect { |k, v| [k, v] }])
+          Property('Handler', lambda_config['handler'] || 'index.handler')
+          Property('MemorySize', lambda_config['memory'] || 128)
           Property('Role', FnGetAtt("LambdaRole#{lambda_config['role']}", 'Arn'))
           Property('Runtime', lambda_config['runtime'])
-          Property('Timeout', timeout)
+          Property('Timeout', lambda_config['timeout'] || 10)
           if (lambda_config['vpc'] != nil && lambda_config['vpc'])
             Property('VpcConfig', {
                 SubnetIds: config['availability_zones'].collect { |az| Ref("SubnetPrivate#{az}") },
                 SecurityGroupIds: [Ref('SecurityGroupBackplane')]
             })
           end
-
-          if(lambda_config['named'] != nil && lambda_config['named'])
-            Property('FunctionName',name)
+          if !lambda_config['named'].nil? && lambda_config['named']
+            Property('FunctionName', name)
           end
-
         end
 
+        Output("Lambda#{function_name}Arn") {
+          Value(
+              FnGetAtt(function_name, 'Arn')
+          )
+        }
+
+        # Create Lambda version
         sha256 = lambda_config['code_sha256']
         Resource("#{name}Version#{lambda_config['timestamp']}") do
           Type 'AWS::Lambda::Version'
           DeletionPolicy 'Retain'
-          Property('FunctionName',Ref(name))
+          Property('FunctionName', Ref(name))
           Property('CodeSha256', sha256)
         end
 
-        if lambda_config['allowed_sources'] != nil
+        lambda_config['allowed_sources'] = [] if lambda_config['allowed_sources'].nil?
+
+        # if lambda has schedule defined
+        if lambda_config.key?('schedules')
+          lambda_config['allowed_sources'] << { 'principal' => 'events.amazonaws.com' }
+          lambda_config['schedules'].each_with_index do |schedule, index|
+            Resource("Lambda#{name}Schedule#{index}") do
+              Type 'AWS::Events::Rule'
+              Condition(schedule['condition']) if schedule.key?('condition')
+              Property('ScheduleExpression', "cron(#{schedule['cronExpression']})")
+              Property('State', 'ENABLED')
+              target = {
+                  'Arn' => FnGetAtt(name, 'Arn'), 'Id' => "lambda#{name}"
+              }
+              target['Input'] = schedule['payload'] if schedule.key?('payload')
+              Property('Targets', [target])
+            end
+          end
+        end
+
+        # Generate lambda function Policy
+        unless lambda_config['allowed_sources'].nil?
           i = 1
           lambda_config['allowed_sources'].each do |source|
             Resource("#{name}Permissions#{i}") do
               Type 'AWS::Lambda::Permission'
-              Property('FunctionName',Ref(name))
-              Property('Action','lambda:InvokeFunction')
-              Property('Principal',source['principal'])
+              Property('FunctionName', Ref(name))
+              Property('Action', 'lambda:InvokeFunction')
+              Property('Principal', source['principal'])
             end
-            i = i+1
+            i += 1
           end
         end
-
-        Output("Function#{name}") {
-          Value(Ref(name))
-        }
 
       end
 
@@ -144,7 +165,7 @@ class Lambdas
 
 end
 
-if defined? lambdas
+if defined? lambdas or config.key? 'lambdas'
   lambdas = Lambdas.new(config)
   lambdas.create_stack()
 end

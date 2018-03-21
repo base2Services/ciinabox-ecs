@@ -131,3 +131,26 @@ s3-secrets-ro:
         - '/'
         - Ref: "EnvironmentName"
         - '/*'
+
+route53-manage-records:
+  action:
+    - route53:ListTagsForResources
+    - route53:GetHostedZone
+    - route53:ListHostedZones
+    - route53:ListHostedZonesByName
+    - route53:ChangeResourceRecordSets
+    - route53:ListResourceRecordSets
+    - route53:ListTagsForResource
+
+acm-cert-issue:
+  action:
+    - acm:DeleteCertificate
+    - acm:DescribeCertificate
+    - acm:DescribeCertificate
+    - acm:RequestCertificate
+    - acm:ListCertificates
+
+lambda-invoke:
+  action:
+    - lambda:Get*
+    - lambda:Invoke*

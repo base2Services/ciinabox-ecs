@@ -3,3 +3,5 @@ Gemfile.lock
 ciinaboxes/
 ciinaboxes
 ssl/
+/lambdas/acm_issuer_validator/lib/
+debug.config.yaml

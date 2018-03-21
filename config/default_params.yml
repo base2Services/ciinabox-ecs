@@ -299,3 +299,5 @@ bastionAMI:
    ami: ami-1a7f6d7e
   eu-central-1:
    ami: ami-c7ee5ca8
+
+acm_auto_issue_validate: true

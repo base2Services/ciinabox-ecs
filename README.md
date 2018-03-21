@@ -14,7 +14,7 @@ Right Now ciinabox supports deploying:
 
 ## Setup
 
-requires ruby 2.1+
+requires ruby 2.3+
 
 1. git clone https://github.com/base2Services/ciinabox-ecs.git
 2. cd ciinabox-ecs
@@ -107,6 +107,11 @@ to further configure drone ci refer to the drone ci's environment variable in th
 ```
 
 ## Getting Started
+
+During the setup process, you'll need to provide domain for the tools (e.g. `*.tools.example.com`) that has 
+matching Route53 zone in same AWS account where you are creating ciinabox. Optionally you can use local hosts file
+hack in order to get routing working, but in this case usage of ACM certificates is not an option, and you'll need
+to use selfsigned IAM server certificates. 
 
 ### Quick setup
 
@@ -403,4 +408,37 @@ key for this.
 
 ```yaml
 allow_nat_connections: false
+```
+
+## Automatic issuance and validation of ACM SSL certificate
+
+This setting is enabled by default in default parameters. During the ciinabox init stage, you will be 
+asked if you want to utilise this functionality. Essentially, custom cloudformation resource based on 
+python [aws-acm-validator](https://pypi.python.org/pypi/aws-acm-cert-validator) python package will 
+request and validate ACM certificate through appropriate Route 53 DNS validation record. 
+
+### To disable during ciinabox setup
+
+Answer question below with 'y' during ciinabox init stage 
+
+```text
+Use selfsigned rather than ACM issued and validated certificate (y/n)? [n]
+```
+
+### To disable for existing ciinaboxes
+
+Within `$CIINABOXES_DIR/$CIINABOX/params.yml`
+
+```yaml
+acm_auto_issue_validate: false
+```
+
+### To migrate previous versions of ciinabox to this functionality
+
+After updating to latest ciinabox version including this functionality, you may want to update value of `default_ssl_cert_id`
+configuration key to ARN of the freshly issued ACM certificate. You can do that using `update_cert_to_acm` rake task
+
+```yaml
+$ CIINABOX=myciinabox rake ciinabox:update_cert_to_acm
+Set arn:aws:acm:ap-southeast-2:123456789012:certificate/2f2f3f9f-aaaa-bbbb-cccc-11dac04e7fb9 as default_cert_arn
 ```
