@@ -29,6 +29,8 @@ devAccess:
 # Upload a default ssl cert to AWS to be used by default to ciinabox service ELBs
 default_ssl_cert_id: "arn:aws:iam::<%= ciinabox_aws_account %>:server-certificate/ciinabox"
 
+acm_auto_issue_validate: <%= acm_auto_issue_validate%>
+
 <% if ciinabox_docker_repo != '' %>
 ciinabox_repo: <%= ciinabox_docker_repo %>
 <% end %>

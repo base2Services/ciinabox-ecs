@@ -28,7 +28,7 @@ class Policies
 
   def create_policies(policies)
     policies.each do |policy|
-      raise "ERROR: #{policy} policy doesn't exist in the managed policies or as a custom policy" if !@policies.key?(policy)
+      raise "ERROR: #{policy} policy doesn't exist in the managed policies or as a custom policy" unless @policies.key?(policy)
       resource = (@policies[policy].key?('resource') ? gsub_yml(@policies[policy]['resource']) : ["*"])
       @policy_array << { PolicyName: policy, PolicyDocument: { Statement: [ { Effect:"Allow", Action: @policies[policy]['action'], Resource: resource }]} }
     end

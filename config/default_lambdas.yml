@@ -1,0 +1,26 @@
+default_lambdas:
+  roles:
+    acmissuevalidate:
+      policies_managed:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole'
+      policies_inline:
+        - cloudwatch-logs
+        - route53-manage-records
+        - acm-cert-issue
+        - lambda-invoke
+
+  functions:
+    CRIssueACMCertificate:
+      local: true
+      role: acmissuevalidate
+      package_cmd: ../install.sh
+      runtime: python3.6
+      code: lambdas/acm_issuer_validator/lib
+      vpc: false
+      named: false
+      timeout: 60
+      handler: aws_acm_cert_validator_lambda/handler.lambda_handler
+      environment:
+        MAX_WAIT_TIME: 600
+      allowed_sources:
+        - principal: cloudformation.amazonaws.com

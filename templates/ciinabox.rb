@@ -14,14 +14,14 @@ CloudFormation do
   Resource('VPCStack') {
     Type 'AWS::CloudFormation::Stack'
     Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/vpc.json")
-    Property('TimeoutInMinutes', 5)
+    Property('TimeoutInMinutes', 10)
   }
 
   # ECS Cluster Stack
   Resource('ECSStack') {
     Type 'AWS::CloudFormation::Stack'
     Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/ecs-cluster.json")
-    Property('TimeoutInMinutes', 5)
+    Property('TimeoutInMinutes', 10)
     Property('Parameters',{
       ECSCluster: Ref(cluster_name),
       VPC: FnGetAtt('VPCStack', 'Outputs.VPCId'),
@@ -37,7 +37,7 @@ CloudFormation do
   Resource('ECSServicesStack') {
     Type 'AWS::CloudFormation::Stack'
     Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/ecs-services.json")
-    Property('TimeoutInMinutes', 5)
+    Property('TimeoutInMinutes', 15)
     Property('Parameters',{
       ECSCluster: Ref(cluster_name),
       VPC: FnGetAtt('VPCStack', 'Outputs.VPCId'),
@@ -49,7 +49,8 @@ CloudFormation do
       SecurityGroupBackplane: FnGetAtt('VPCStack', 'Outputs.SecurityGroupBackplane'),
       SecurityGroupOps: FnGetAtt('VPCStack', 'Outputs.SecurityGroupOps'),
       SecurityGroupDev: FnGetAtt('VPCStack', 'Outputs.SecurityGroupDev'),
-      SecurityGroupNatGateway: FnGetAtt('VPCStack', 'Outputs.SecurityGroupNatGateway')
+      SecurityGroupNatGateway: FnGetAtt('VPCStack', 'Outputs.SecurityGroupNatGateway'),
+      CRAcmCertArn: FnGetAtt('LambdasStack','Outputs.LambdaCRIssueACMCertificateArn')
     })
   }
 
@@ -68,12 +69,22 @@ CloudFormation do
     base_params.merge!("RouteTablePrivate#{az}" => FnGetAtt('VPCStack', "Outputs.RouteTablePrivate#{az}"))
   end
 
+  # Lambda functions stack
+  Resource('LambdasStack') do
+    Type 'AWS::CloudFormation::Stack'
+    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/lambdas.json")
+    Property('Parameters', base_params)
+  end
+
+
   # Bastion if required
   Resource('BastionStack') do
     Type 'AWS::CloudFormation::Stack'
     Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/bastion.json")
     Property('Parameters', base_params)
   end if include_bastion_stack
+
+
 
   #Foreign templates
   #e.g CIINABOXES_DIR/CIINABOX/templates/x.rb
@@ -141,5 +152,8 @@ CloudFormation do
     Value(FnGetAtt('ECSStack', 'Outputs.ECSInstanceProfile'))
   }
 
+  Output('DefaultSSLCertificate'){
+    Value(FnGetAtt('ECSServicesStack','Outputs.DefaultSSLCertificate'))
+  }
 
 end
