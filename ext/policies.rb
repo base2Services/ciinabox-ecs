@@ -2,7 +2,8 @@ require 'yaml'
 
 module Configs
   class << self; attr_accessor :managed_policies, :all end
-  @managed_policies = YAML.load(File.read('ext/config/managed_policies.yml'))
+  script_dir  = File.expand_path File.dirname(__FILE__)
+  @managed_policies = YAML.load(File.read("#{script_dir}/config/managed_policies.yml"))
   @all = Hash.new.tap { |h| Dir['config/*.yml'].each { |yml| h.merge!(YAML.load(File.open(yml))) }}
   # Override with ciinabox configs
   ciinaboxes_dir = ENV['CIINABOXES_DIR'] || 'ciinaboxes'

@@ -1,0 +1,14 @@
+## Contributing guidelines
+
+
+### Adding new actions
+
+Currently all actions are implemented as Rake tasks, and wrapped using `bin/ciinabox-ecs.rb` cli handler.
+Ciinabox name is set as last name of the action. If you are adding action that does not take ciinabox
+as argument - such as initialisation tasks, you'll need to add exception for not requiring ciinabox name
+for that task within CLI wrapper.
+
+
+### Adding new services
+
+- Add template in `templates/services/service_name.rb`
