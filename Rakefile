@@ -198,7 +198,7 @@ namespace :ciinabox do
   task :status do
     check_active_ciinabox(config)
     status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
-    if status > 0
+    if status != 0
       puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
       exit 1
     end
@@ -215,10 +215,10 @@ namespace :ciinabox do
   task :create_source_bucket do
     check_active_ciinabox(config)
     status, result = aws_execute(config, ['s3', 'ls', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"])
-    if status > 0
+    if status != 0
       status, result = aws_execute(config, ['s3', 'mb', "s3://#{config['source_bucket']}"])
       puts result
-      if status > 0
+      if status != 0
         puts "fail to create source bucket see error logs for details"
         exit status
       else
@@ -258,7 +258,7 @@ namespace :ciinabox do
         "--private-key file://#{cert_dir}/ssl/ciinabox.key",
         "--certificate-chain file://#{cert_dir}/ssl/ciinabox.crt"
     ])
-    if status > 0
+    if status != 0
       puts "fail to create or update IAM server-certificates. See error logs for details"
       puts result
       exit status
@@ -285,7 +285,7 @@ namespace :ciinabox do
         "--out text"
     ], "#{keypair_dir}/ciinabox.pem")
     puts result
-    if status > 0
+    if status != 0
       puts "fail to create keypair see error logs for details"
       exit status
     else
@@ -299,7 +299,7 @@ namespace :ciinabox do
     check_active_ciinabox(config)
     status, result = aws_execute(config, ['s3', 'sync', 'output/', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"])
     puts result
-    if status > 0
+    if status != 0
       puts "fail to upload rendered templates to S3 bucket #{config['source_bucket']}"
       exit status
     else
@@ -316,7 +316,7 @@ namespace :ciinabox do
         '--capabilities CAPABILITY_IAM'
     ])
     puts result
-    if status > 0
+    if status != 0
       puts "Failed to create ciinabox environment"
       exit status
     else
@@ -333,7 +333,7 @@ namespace :ciinabox do
         '--capabilities CAPABILITY_IAM'
     ])
     puts result
-    if status > 0
+    if status != 0
       puts "Failed to update ciinabox environment"
       exit status
     else
@@ -363,7 +363,7 @@ namespace :ciinabox do
     if input == 'y'
       status, result = aws_execute(config, ['cloudformation', 'delete-stack', "--stack-name #{stack_name}"])
       puts result
-      if status > 0
+      if status != 0
         puts "fail to tear down ciinabox environment"
         exit status
       else
@@ -597,7 +597,7 @@ namespace :ciinabox do
         '--query Reservations[*].Instances[?Tags[?Value==\`ciinabox-ecs\`]].PrivateIpAddress',
         '--out text'
     ])
-    if status > 0
+    if status != 0
       return nil
     else
       return result

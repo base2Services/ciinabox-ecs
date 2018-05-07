@@ -2,8 +2,8 @@ require 'rake'
 
 Gem::Specification.new do |s|
   s.name = 'ciinabox-ecs'
-  s.version = '0.2.6'
-  s.date = '2018-03-23'
+  s.version = '0.2.7'
+  s.date = '2018-05-07'
   s.summary = 'Manage ciinabox on Aws Ecs'
   s.description = ''
   s.authors = ['Base2Services']
