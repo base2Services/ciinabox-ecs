@@ -33,6 +33,7 @@ end
 port_mappings = []
 
 if defined? service
+  service = {} if service.nil?
   jenkins_java_opts = service['JAVA_OPTS'] || ''
   image = service['ContainerImage'] || image
   memory = service['ContainerMemory'] || 2048

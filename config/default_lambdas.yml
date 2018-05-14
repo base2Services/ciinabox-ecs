@@ -13,7 +13,7 @@ default_lambdas:
     CRIssueACMCertificate:
       local: true
       role: acmissuevalidate
-      package_cmd: ../install.sh
+      package_cmd: ./install.sh
       runtime: python3.6
       code: lambdas/acm_issuer_validator/lib
       vpc: false

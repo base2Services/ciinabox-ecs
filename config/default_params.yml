@@ -73,30 +73,38 @@ Mappings:
       NatInstanceType: t2.micro
       ECSInstanceType: t2.large
 
-#Amazon Linux AMI 2015.03.1 (HVM), SSD Volume Type
-natAMI:
-  us-east-1:
-    ami: ami-60b6c60a
-  us-west-2:
-    ami: ami-f0091d91
-  ap-southeast-2:
-    ami: ami-48d38c2b
-  eu-west-1:
-    ami: ami-bff32ccc
-  ap-southeast-1:
-    ami: ami-c9b572aa
 
 ecs_ami:
   us-east-1:
     ami: ami-04351e12
-  us-west-2:
-    ami: ami-57d9cd2e
-  ap-southeast-2:
-    ami: ami-42e9f921
+  us-east-2:
+    ami: ami-1b90a67e
+  us-west-1:
+    ami: ami-9cbbaffc
+  eu-west-3:
+    ami: ami-914afcec
+  eu-west-2:
+    ami: ami-a48d6bc3
   eu-west-1:
-    ami: ami-809f84e6
+    ami: ami-bfb5fec6
+  eu-central-1:
+    ami: ami-ac055447
+  us-west-2:
+    ami: ami-05b5277d
+  ap-southeast-2:
+    ami: ami-4cc5072e
   ap-southeast-1:
-    ami: ami-19f7787a
+    ami: ami-acbcefd0
+  ap-northeast-2:
+    ami: ami-ba74d8d4
+  ap-northeast-1:
+    ami: ami-5add893c
+  ca-central-1:
+    ami: ami-a535b2c1
+  ap-south-1:
+    ami: ami-2149114e
+  sa-east-1:
+    ami: ami-d3bce9bf
 
 #Webhook access only via https
 webHooks:

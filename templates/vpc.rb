@@ -9,7 +9,6 @@ CloudFormation {
 
   # Global mappings
   Mapping('EnvironmentType', Mappings['EnvironmentType'])
-  Mapping('NatAMI', natAMI)
 
   # Resources
   Resource("VPC") {

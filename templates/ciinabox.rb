@@ -1,10 +1,11 @@
 require_relative '../ext/policies'
-
 CloudFormation do
+
+  ciinabox_binary_version = config['ciinabox_binary_version']
 
   # Template metadata
   AWSTemplateFormatVersion '2010-09-09'
-  Description "ciinabox ECS - Master v#{ciinabox_version}"
+  Description "ciinabox ECS #{ciinabox_binary_version} - v#{ciinabox_version}"
 
   Resource(cluster_name) {
     Type 'AWS::ECS::Cluster'
@@ -154,6 +155,14 @@ CloudFormation do
 
   Output('DefaultSSLCertificate'){
     Value(FnGetAtt('ECSServicesStack','Outputs.DefaultSSLCertificate'))
+  }
+
+  Output('CiinaboxBinaryVersion'){
+    Value(ciinabox_binary_version)
+  }
+
+  Output('CiinaboxName'){
+    Value(ciinabox_name)
   }
 
 end

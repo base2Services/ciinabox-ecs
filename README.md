@@ -10,16 +10,46 @@ Right Now ciinabox supports deploying:
  * [bitbucket](https://www.atlassian.com/software/bitbucket)
  * [hawtio](http://hawt.io/)
  * [nexus](http://www.sonatype.org/nexus/)
+ * [artifactory](https://jfrog.com/open-source/)
  * plus custom tasks and stacks
 
 ## Setup
 
 requires ruby 2.3+
 
-1. git clone https://github.com/base2Services/ciinabox-ecs.git
-2. cd ciinabox-ecs
-3. bundle install
-4. bundle exec rake -T
+install [ciinabox-ecs](https://rubygems.org/gems/ciinabox-ecs/) gem
+
+```bash
+$ gem install ciinabox-ecs
+...
+Done installing documentation for ciinabox-ecs after xx seconds
+1 gem installed
+
+$ ciinabox-ecs help
+Usage: ciinabox-ecs action1 action2 action3 ciinabox_name
+Valid actions:
+name                 |description         
+
+active               |Switch active ciinabox
+create               |Creates the ciinabox environment
+create_server_cert   |Create self-signed SSL certs for use with ciinabox
+create_source_bucket |Creates the source bucket for deploying ciinabox
+deploy               |Deploy Cloudformation templates to S3
+down                 |Turn off your ciinabox environment
+full_install         |Initialize configuration, create required assets in AWS account, create Cloud Formation stack
+generate             |Generate CloudFormation templates
+generate_keypair     |Generate ciinabox AWS keypair
+init                 |Initialise a new ciinabox environment
+package_lambdas      |Package Lambda Functions as ZipFiles
+ssh                  |SSH into your ciinabox environment
+status               |Current status of the active ciinabox
+tear_down            |Deletes/tears down the ciinabox environment
+up                   |Turn on your ciinabox environment
+update               |Updates the ciinabox environment
+update_cert_to_acm   |Replace previously auto-generated IAM certificate with auto-validated ACM certificate (if one exists)
+upload_server_cert   |Uploads SSL server certs for ciinabox
+
+```
 
 If setting your own parameters and additional services, they should be configured as such:
 
@@ -27,7 +57,7 @@ If setting your own parameters and additional services, they should be configure
 ciinaboxes/ciinabox_name/config/params.yml
 
 e.g:
-```ruby
+```yaml
 log_level: ':debug'
 timezone: 'Australia/Melbourne'
 ```
@@ -37,76 +67,29 @@ If you wish to add additional containers to your ciinabox environment, you can s
 ciinaboxes/ciinabox_name/config/services.yml
 
 e.g:
+    
 ```yaml
----
-services:
-  - jenkins:
-  - bitbucket:
-      LoadBalancerPort: 22
-      InstancePort: 7999
-      Protocol: TCP
-  - hawtio:
-  - nexus:
+    services:
+      - jenkins:
+      - bitbucket:
+          LoadBalancerPort: 22
+          InstancePort: 7999
+          Protocol: TCP
+      - hawtio:
+      - nexus:
+      - artifactory:
+      - drone:
 ```
-
+    
 Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
 
-Note the drone service requires a minimum yaml configuration of below
-```yml
-services:
-  - drone:
-      params:
-        -
-          VPC:
-            Ref: VPC
-        -
-          SubnetPublicA:
-            Ref: SubnetPublicA
-        -
-          SubnetPublicB:
-            Ref: SubnetPublicB
-        -
-          ECSSubnetPrivateA:
-            Ref: ECSSubnetPrivateA
-        -
-          ECSSubnetPrivateB:
-            Ref: ECSSubnetPrivateB
-        -
-          SecurityGroupBackplane:
-            Ref: SecurityGroupBackplane
-        -
-          SecurityGroupOps:
-            Ref: SecurityGroupOps
-        -
-          SecurityGroupDev:
-            Ref: SecurityGroupDev
-        -
-          SecurityGroupNatGateway:
-            Ref: SecurityGroupNatGateway
-        -
-          SecurityGroupWebHooks:
-            Ref: SecurityGroupWebHooks
-        -
-          ECSENIPrivateIpAddress:
-            Ref: ECSENIPrivateIpAddress
-      tasks:
-        drone-server:
-          env:
-            DRONE_OPEN: true
-```
-to further configure drone ci refer to the drone ci's environment variable in the documentation http://docs.drone.io/installation/, you can add/override drone's environment variable to their corresponding yaml section (`drone-server` and `drone-agent`), example
-```yml
-      tasks:
-        drone-server:
-          env:
-            DRONE_OPEN: true
-            DRONE_SECRET: base2services # if this value is not specified, a secure random hex will be used
-        drone-agent:
-          env:
-            DRONE_SECRET: base2services # if this value is not specified, a secure random hex will be used
-```
-
 ## Getting Started
+
+To get started install `ciinabox-ecs` ruby gem
+
+```bash
+$ gem install ciinabox-ecs
+```
 
 During the setup process, you'll need to provide domain for the tools (e.g. `*.tools.example.com`) that has 
 matching Route53 zone in same AWS account where you are creating ciinabox. Optionally you can use local hosts file
@@ -115,11 +98,11 @@ to use selfsigned IAM server certificates.
 
 ### Quick setup
 
-You can be guided through full installation of ciinabox by running rake `ciinabox:full_install` task. Interactive
+You can be guided through full installation of ciinabox by running `full_install` action. Interactive
 command line prompt will offer you defaults for most of required options.
 
 ```bash
-$ bundle exec rake ciinabox:full_install
+$ ciinabox-ecs full_install
 
 ```
 
@@ -127,7 +110,7 @@ $ bundle exec rake ciinabox:full_install
 
 1. Initialize/Create a new ciinabox environment. Please note that any user-defined services and parameters will be merged during this task into the default templates
   ```bash
-  $ rake ciinabox:init
+  $ ciinabox-ecs init
   Enter the name of ypur ciinabox:
   myciinabox
   Enter the id of your aws account you wish to use with ciinabox
@@ -141,24 +124,13 @@ $ bundle exec rake ciinabox:full_install
   # Enable active ciinabox by executing or override ciinaboxes base directory:
   export CIINABOXES_DIR="ciinaboxes/"
   export CIINABOX="myciinabox"
-  # or run
-  eval $(rake ciinabox:active[myciinabox])
   ```
   You can override the default ciinaboxes directory by setting the CIINABOXES_DIR environment variable. Also the DNS domain you entered about must already exist in Route53
 
-2. check that your new ciinabox is the current active one
-  ```bash
-  $ rake ciinabox:active
-  # Enable active ciinabox by executing or override ciinaboxes base directory:
-  export CIINABOXES_DIR="ciinaboxes/"
-  export CIINABOX="myciinabox"
-  # or run
-  eval $(rake ciinabox:active[myciinabox])
-  ```
 
 3. Generate self-signed wild-card cert for your ciinabox
   ```bash
-  $ rake ciinabox:create_server_cert
+  $ ciinabox-ecs create_server_cert [ciinabox_name]
   Generating a 4096 bit RSA private key
   .......................................................................................................................................++
   ....................++
@@ -168,25 +140,25 @@ $ bundle exec rake ciinabox:full_install
 
 4. Create IAM server-certificates
   ```bash
-  $ rake ciinabox:upload_server_cert
+  $ ciinabox-ecs upload_server_cert [ciinabox_name]
   Successfully uploaded server-certificates
   ```
 
 5. Create ciinabox S3 source deployment bucket
   ```bash
-  $ rake ciinabox:create_source_bucket
+  $ ciinabox-ecs create_source_bucket [ciinabox_name] 
   Successfully created S3 source deployment bucket source.myciinabox.com
   ```
 
 6. Create ssh ec2 keypair
   ```bash
-  $ rake ciinabox:generate_keypair
+  $ ciinabox-ecs generate_keypair [ciinabox_name]
   Successfully created ciinabox ssh keypair
   ```
 
 7. Generate ciinabox cloudformation templates
   ```bash
-  $ rake ciinabox:generate
+  $ ciinabox-ecs generate [ciinabox_name] 
   Writing to output/ciinabox.json
   using extras [[:yaml, "ciinaboxes/myciinabox/config/default_params.yml"], [:yaml, "config/services.yml"], [:ruby, "ext/helper.rb"]]
   Loading YAML file ciinaboxes/myciinabox/config/default_params.yml
@@ -210,7 +182,7 @@ $ bundle exec rake ciinabox:full_install
 
 8. Deploy/upload cloudformation templates to source deployment bucket
   ```bash
-  $ rake ciinabox:deploy
+  $ ciinabox-ecs deploy [ciinabox_name]
   upload: output/vpc.json to s3://source.myciinabox.com/ciinabox/0.1/vpc.json
   upload: output/ecs-services.json to s3://source.myciinabox.com/ciinabox/0.1/ecs-services.json
   upload: output/ciinabox.json to s3://source.myciinabox.com/ciinabox/0.1/ciinabox.json
@@ -222,10 +194,10 @@ $ bundle exec rake ciinabox:full_install
 
 9. Create/Lanuch ciinabox environment
   ```bash
-  $ rake ciinabox:create
+  $ ciinabox-ecs create base2
   Starting updating of ciinabox environment
   # checking status using
-  $ rake ciinabox:status
+  $ ciinabox-ecs status base2
   base2 ciinabox is in state: CREATE_IN_PROGRESS
   # When your ciinabox environment is ready the status will be
   base2 ciinabox is alive!!!!
@@ -235,7 +207,7 @@ $ bundle exec rake ciinabox:full_install
 
 ## Additional Tasks
 
-### ciinabox:update
+### ciinabox-ecs update
 
 Runs a cloudformation update on the current ciinabox environment. You can use this task if you've modified the default_params.yml config file for your ciinabox and you want to apply these changes to your ciinabox.
 
@@ -260,25 +232,20 @@ A common update would be to lock down ip access to your ciinabox environment
 
 2. update your ciinabox
   ```bash
-  $ bundle exec rake ciinabox:generate
-  $ bundle exec rake ciinabox:deploy
-  $ bundle exec rake ciinabox:update
-  $ bundle exec rake ciinabox:status  
+  $ ciinabox-ecs generate deploy update [ciinabox_name]
+  $ ciinabox-ecs status [ciinabox_name]
   ```
 
-### ciinabox:tear_down
+### ciinabox-ecs tear_down [ciinabox_name]
 
 Tears down your ciinabox environment. But why would you want to :)
 
-### ciinabox:active[ciinabox]
 
-Displays the current active ciinabox environment and allows you to change to a different one
-
-### ciinabox:up
+### ciinabox-ecs up [ciinabox_name]
 
 Relies on [cfn_manage](https://rubygems.org/gems/cfn_manage) gem to bring stack up. Stack needs to be stopped using `ciinabox:down` task
 
-### ciinabox:down
+### ciinabox-ecs down [ciinabox_name]
 
 Relies on [cfn_manage](https://rubygems.org/gems/cfn_manage) gem to stop the stack. Will set ASG size to 0 (and optionally set bastion ASG size to 0).
 
@@ -436,9 +403,91 @@ acm_auto_issue_validate: false
 ### To migrate previous versions of ciinabox to this functionality
 
 After updating to latest ciinabox version including this functionality, you may want to update value of `default_ssl_cert_id`
-configuration key to ARN of the freshly issued ACM certificate. You can do that using `update_cert_to_acm` rake task
+configuration key to ARN of the freshly issued ACM certificate. You can do that using `update_cert_to_acm` action
 
 ```yaml
-$ CIINABOX=myciinabox rake ciinabox:update_cert_to_acm
+$ ciinabox-ecs update_cert_to_acm [ciinabox_name]
 Set arn:aws:acm:ap-southeast-2:123456789012:certificate/2f2f3f9f-aaaa-bbbb-cccc-11dac04e7fb9 as default_cert_arn
+```
+
+## Enabling specific services
+
+### Artifactory
+
+Just add artifactory in your `ciinabox_name/config/services.yml`
+Artifactory service is routed through nginx reverse proxy, so it's not
+added to ELB by default (InstancePort=0)
+
+```yaml
+services:
+ - artifactory:
+```
+
+Defaults for artifactory are stated below, so if need be they can be overridden
+
+```yaml
+services:
+  - artifactory:
+      ContainerImage: base2/ciinabox-artifactory:5.9.3
+      ContainerMemory: 768
+      ContainerCPU: 0
+      InstancePort: 0
+```
+
+### Drone
+
+
+Note the drone service requires a minimum yaml configuration of below
+```yml
+services:
+  - drone:
+      params:
+        -
+          VPC:
+            Ref: VPC
+        -
+          SubnetPublicA:
+            Ref: SubnetPublicA
+        -
+          SubnetPublicB:
+            Ref: SubnetPublicB
+        -
+          ECSSubnetPrivateA:
+            Ref: ECSSubnetPrivateA
+        -
+          ECSSubnetPrivateB:
+            Ref: ECSSubnetPrivateB
+        -
+          SecurityGroupBackplane:
+            Ref: SecurityGroupBackplane
+        -
+          SecurityGroupOps:
+            Ref: SecurityGroupOps
+        -
+          SecurityGroupDev:
+            Ref: SecurityGroupDev
+        -
+          SecurityGroupNatGateway:
+            Ref: SecurityGroupNatGateway
+        -
+          SecurityGroupWebHooks:
+            Ref: SecurityGroupWebHooks
+        -
+          ECSENIPrivateIpAddress:
+            Ref: ECSENIPrivateIpAddress
+      tasks:
+        drone-server:
+          env:
+            DRONE_OPEN: true
+```
+to further configure drone ci refer to the drone ci's environment variable in the documentation http://docs.drone.io/installation/, you can add/override drone's environment variable to their corresponding yaml section (`drone-server` and `drone-agent`), example
+```yml
+      tasks:
+        drone-server:
+          env:
+            DRONE_OPEN: true
+            DRONE_SECRET: base2services # if this value is not specified, a secure random hex will be used
+        drone-agent:
+          env:
+            DRONE_SECRET: base2services # if this value is not specified, a secure random hex will be used
 ```

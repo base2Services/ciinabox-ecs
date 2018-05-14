@@ -9,12 +9,16 @@ require 'securerandom'
 require 'base64'
 require 'tempfile'
 require 'json'
-require_relative 'ext/common_helper'
-require_relative 'ext/zip_helper'
+require_relative './ext/common_helper'
+require_relative './ext/zip_helper'
+require 'ciinabox-ecs' if Gem::Specification::find_all_by_name('ciinabox-ecs').any?
+
 namespace :ciinabox do
 
   #load config
-  templates = Dir["templates/**/*.rb"]
+  current_dir = File.expand_path File.dirname(__FILE__)
+
+  templates = Dir["#{current_dir}/templates/**/*.rb"]
   ciinaboxes_dir = ENV['CIINABOXES_DIR'] || 'ciinaboxes'
   ciinabox_name = ENV['CIINABOX'] || ''
 
@@ -22,8 +26,8 @@ namespace :ciinabox do
   @ciinabox_name = ciinabox_name
 
   #Load and merge standard ciinabox-provided parameters
-  default_params = YAML.load(File.read("config/default_params.yml")) if File.exist?("config/default_params.yml")
-  lambda_params = YAML.load(File.read('config/default_lambdas.yml'))
+  default_params = YAML.load(File.read("#{current_dir}/config/default_params.yml")) if File.exist?("#{current_dir}/config/default_params.yml")
+  lambda_params = YAML.load(File.read("#{current_dir}/config/default_lambdas.yml"))
   default_params.merge!(lambda_params)
 
   if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
@@ -42,7 +46,14 @@ namespace :ciinabox do
   config['lambdas'] = {} unless config.key? 'lambdas'
   config['lambdas'].extend(config['default_lambdas'])
 
-  File.write('debug.config.yaml',config.to_yaml) if ENV['DEBUG']
+  # ciinabox binary version
+  if Gem.loaded_specs['ciinabox-ecs'].nil?
+    config['ciinabox_binary_version'] = `git rev-parse --short HEAD`.gsub("\n",'')
+  else
+    config['ciinabox_binary_version'] = Gem.loaded_specs['ciinabox-ecs'].version.to_s
+  end
+
+  File.write('debug-ciinabox.config.yaml',config.to_yaml) if ENV['DEBUG']
 
   stack_name = config["stack_name"] || "ciinabox"
 
@@ -76,13 +87,13 @@ namespace :ciinabox do
     tmp_file = write_config_tmp_file(config)
 
     CfnDsl::RakeTask.new do |t|
-      extras = [[:yaml, 'config/default_params.yml']]
-      extras << [:yaml, 'config/default_lambdas.yml']
+      extras = [[:yaml,"#{current_dir}/config/default_params.yml"]]
+      extras << [:yaml, "#{current_dir}/config/default_lambdas.yml"]
       if File.exist? "#{ciinaboxes_dir}/ciinabox_config.yml"
         extras << [:yaml, "#{ciinaboxes_dir}/ciinabox_config.yml"]
       end
-      (Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].map { |f| [:yaml, f] }).each { |c| extras<<c }
-      extras << [:ruby, 'ext/helper.rb']
+      (Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].map { |f| [:yaml,f]}).each {|c| extras<<c}
+      extras << [:ruby,"#{current_dir}/ext/helper.rb"]
       extras << [:yaml, tmp_file.path]
       t.cfndsl_opts = {
           verbose: true,
@@ -148,7 +159,7 @@ namespace :ciinabox do
 
     #Settings preference - 1) User-input 2) User-provided params.yml 3) Default template
 
-    ciinabox_params = File.read('config/ciinabox_params.yml.erb')
+    ciinabox_params = File.read("#{current_dir}/config/ciinabox_params.yml.erb")
     input_result = ERB.new(ciinabox_params).result(binding)
     input_hash = YAML.load(input_result) #Converts user input to hash
     if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
@@ -159,7 +170,7 @@ namespace :ciinabox do
       File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml", 'w') { |f| f.write(input_result) }
     end
 
-    default_services = YAML.load(File.read("config/default_services.yml"))
+    default_services = YAML.load(File.read("#{current_dir}/config/default_services.yml"))
 
     class ::Hash
       def deep_merge(second)
@@ -182,17 +193,12 @@ namespace :ciinabox do
     display_active_ciinabox ciinaboxes_dir, ciinabox_name
   end
 
-  desc('Switch active ciinabox')
-  task :active, :ciinabox do |t, args|
-    ciinabox = args[:ciinabox] || ciinabox_name
-    display_active_ciinabox ciinaboxes_dir, ciinabox
-  end
 
   desc('Current status of the active ciinabox')
   task :status do
     check_active_ciinabox(config)
     status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
-    if status > 0
+    if status != 0
       puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
       exit 1
     end
@@ -209,10 +215,10 @@ namespace :ciinabox do
   task :create_source_bucket do
     check_active_ciinabox(config)
     status, result = aws_execute(config, ['s3', 'ls', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"])
-    if status > 0
+    if status != 0
       status, result = aws_execute(config, ['s3', 'mb', "s3://#{config['source_bucket']}"])
       puts result
-      if status > 0
+      if status != 0
         puts "fail to create source bucket see error logs for details"
         exit status
       else
@@ -252,7 +258,7 @@ namespace :ciinabox do
         "--private-key file://#{cert_dir}/ssl/ciinabox.key",
         "--certificate-chain file://#{cert_dir}/ssl/ciinabox.crt"
     ])
-    if status > 0
+    if status != 0
       puts "fail to create or update IAM server-certificates. See error logs for details"
       puts result
       exit status
@@ -279,7 +285,7 @@ namespace :ciinabox do
         "--out text"
     ], "#{keypair_dir}/ciinabox.pem")
     puts result
-    if status > 0
+    if status != 0
       puts "fail to create keypair see error logs for details"
       exit status
     else
@@ -291,9 +297,9 @@ namespace :ciinabox do
   desc('Deploy Cloudformation templates to S3')
   task :deploy do
     check_active_ciinabox(config)
-    status, result = aws_execute(config, ['s3', 'sync', '--delete', 'output/', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"])
+    status, result = aws_execute(config, ['s3', 'sync', 'output/', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"])
     puts result
-    if status > 0
+    if status != 0
       puts "fail to upload rendered templates to S3 bucket #{config['source_bucket']}"
       exit status
     else
@@ -310,7 +316,7 @@ namespace :ciinabox do
         '--capabilities CAPABILITY_IAM'
     ])
     puts result
-    if status > 0
+    if status != 0
       puts "Failed to create ciinabox environment"
       exit status
     else
@@ -327,7 +333,7 @@ namespace :ciinabox do
         '--capabilities CAPABILITY_IAM'
     ])
     puts result
-    if status > 0
+    if status != 0
       puts "Failed to update ciinabox environment"
       exit status
     else
@@ -357,7 +363,7 @@ namespace :ciinabox do
     if input == 'y'
       status, result = aws_execute(config, ['cloudformation', 'delete-stack', "--stack-name #{stack_name}"])
       puts result
-      if status > 0
+      if status != 0
         puts "fail to tear down ciinabox environment"
         exit status
       else
@@ -393,17 +399,32 @@ namespace :ciinabox do
       config['lambdas']['functions'].each do |name, lambda_config|
         timestamp = Time.now.getutc.to_i
         # create folder
+
         config_file_folder = "output/lambdas/#{name}/#{timestamp}"
         FileUtils.mkdir_p config_file_folder
 
         # download file if code remote archive
         puts "Processing function #{name}...\n"
 
-        lambda_source_dir = File.dirname(lambda_config['code'])
-        lambda_source_dir = "#{ciinaboxes_dir}/#{ciinabox_name}/#{lambda_source_dir}" unless (lambda_config.key? 'local' and lambda_config['local'])
-        lambda_source_file = File.basename(lambda_config['code'])
-        lambda_source_file = '.' if Pathname.new(lambda_config['code']).directory?
-        lambda_source_dir = lambda_config['code'] if Pathname.new(lambda_config['code']).directory?
+        if lambda_config['local']
+          lambda_source_path = "#{current_dir}/#{lambda_config['code']}" if lambda_config['local']
+          lambda_source_file = File.basename(lambda_source_path)
+          tmpdir = "output/package_lambdas/#{name}"
+          FileUtils.mkdir_p tmpdir
+          FileUtils.cp_r(lambda_source_path, tmpdir)
+          lambda_source_path = "#{tmpdir}/#{lambda_source_file}"
+        else
+          lambda_source_path = "#{ciinaboxes_dir}/#{ciinabox_name}/#{lambda_config['code']}"
+        end
+
+        lambda_source_dir = File.dirname(lambda_source_path)
+
+        lambda_source_file = File.basename(lambda_source_path)
+        lambda_source_file = '.' if Pathname.new(lambda_source_path).directory?
+
+        lambda_source_dir = lambda_source_path if Pathname.new(lambda_source_path).directory?
+        puts "Lambda source path: #{lambda_source_path}"
+        puts "Lambda source dir: #{lambda_source_dir}"
 
         unless lambda_config['package_cmd'].nil?
           package_cmd = "cd #{lambda_source_dir} && #{lambda_config['package_cmd']}"
@@ -440,6 +461,8 @@ namespace :ciinabox do
         lambda_config['code_sha256'] = sha256
         lambda_config['timestamp'] = timestamp
       end
+
+      FileUtils.rmtree 'output/package_lambdas'
     end
   end
 
@@ -532,7 +555,7 @@ namespace :ciinabox do
 
   def check_active_ciinabox(config)
     if (config.nil? || config['ciinabox_name'].nil?)
-      puts "no active ciinabox please...run rake ciinabox:active or ciinabox:init"
+      puts "no active ciinabox - either export CIINABOX variable or set ciinabox name as last command line argument"
       exit 1
     end
   end
@@ -556,8 +579,6 @@ namespace :ciinabox do
     puts "# Enable active ciinabox by executing or override ciinaboxes base directory:"
     puts "export CIINABOXES_DIR=\"#{ciinaboxes_dir}\""
     puts "export CIINABOX=\"#{ciinabox}\""
-    puts "# or run"
-    puts "# eval \"$(rake ciinabox:active[#{ciinabox}])\""
   end
 
   def display_ecs_ip_address(config)
@@ -576,7 +597,7 @@ namespace :ciinabox do
         '--query Reservations[*].Instances[?Tags[?Value==\`ciinabox-ecs\`]].PrivateIpAddress',
         '--out text'
     ])
-    if status > 0
+    if status != 0
       return nil
     else
       return result
