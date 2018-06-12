@@ -287,6 +287,7 @@ ecs_iam_role_permissions_default:
 #      CertName: x
 #      StackOctetA: 11
 #      StackOctetB: 12
+vpnInstanceType: t2.small
 bastionInstanceType: t2.micro
 bastionAMI:
   us-east-1:

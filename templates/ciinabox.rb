@@ -85,7 +85,12 @@ CloudFormation do
     Property('Parameters', base_params)
   end if include_bastion_stack
 
-
+  # Vpn if required
+  Resource('VpnStack') do
+    Type 'AWS::CloudFormation::Stack'
+    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/vpn.json")
+    Property('Parameters', base_params)
+  end if include_vpn_stack
 
   #Foreign templates
   #e.g CIINABOXES_DIR/CIINABOX/templates/x.rb

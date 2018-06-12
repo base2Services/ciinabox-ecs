@@ -67,7 +67,7 @@ If you wish to add additional containers to your ciinabox environment, you can s
 ciinaboxes/ciinabox_name/config/services.yml
 
 e.g:
-    
+
 ```yaml
     services:
       - jenkins:
@@ -80,7 +80,7 @@ e.g:
       - artifactory:
       - drone:
 ```
-    
+
 Please note that if you wish to do this, that you also need to create a CFNDSL template for the service under templates/services, with the name of the service as the filename (e.g. bitbucket.rb)
 
 ## Getting Started
@@ -91,10 +91,10 @@ To get started install `ciinabox-ecs` ruby gem
 $ gem install ciinabox-ecs
 ```
 
-During the setup process, you'll need to provide domain for the tools (e.g. `*.tools.example.com`) that has 
+During the setup process, you'll need to provide domain for the tools (e.g. `*.tools.example.com`) that has
 matching Route53 zone in same AWS account where you are creating ciinabox. Optionally you can use local hosts file
 hack in order to get routing working, but in this case usage of ACM certificates is not an option, and you'll need
-to use selfsigned IAM server certificates. 
+to use selfsigned IAM server certificates.
 
 ### Quick setup
 
@@ -146,7 +146,7 @@ $ ciinabox-ecs full_install
 
 5. Create ciinabox S3 source deployment bucket
   ```bash
-  $ ciinabox-ecs create_source_bucket [ciinabox_name] 
+  $ ciinabox-ecs create_source_bucket [ciinabox_name]
   Successfully created S3 source deployment bucket source.myciinabox.com
   ```
 
@@ -158,7 +158,7 @@ $ ciinabox-ecs full_install
 
 7. Generate ciinabox cloudformation templates
   ```bash
-  $ ciinabox-ecs generate [ciinabox_name] 
+  $ ciinabox-ecs generate [ciinabox_name]
   Writing to output/ciinabox.json
   using extras [[:yaml, "ciinaboxes/myciinabox/config/default_params.yml"], [:yaml, "config/services.yml"], [:ruby, "ext/helper.rb"]]
   Loading YAML file ciinaboxes/myciinabox/config/default_params.yml
@@ -348,6 +348,19 @@ bastionAMI:
 
 ```
 
+## Vpn (OpenVpn) instance
+
+You can create a openvpn access server instance complete by using the bellow config. It will create a new ecs cluster in the public subnet and launch [base2/openvpn-as](https://hub.docker.com/r/base2/openvpn-as/) container. It mounts a data volume to persist all configuration and logs in `/data`. Uses the existing `ecs_ami` as the underlying instance ami.
+
+```yaml
+include_vpn_stack: true
+```
+
+It is also possible to override the vpn instance type used for Launch Configuration. Defaults are below
+
+```yaml
+vpnInstanceType: t2.small
+```
 
 ## IAM Roles
 
@@ -379,14 +392,14 @@ allow_nat_connections: false
 
 ## Automatic issuance and validation of ACM SSL certificate
 
-This setting is enabled by default in default parameters. During the ciinabox init stage, you will be 
-asked if you want to utilise this functionality. Essentially, custom cloudformation resource based on 
-python [aws-acm-validator](https://pypi.python.org/pypi/aws-acm-cert-validator) python package will 
-request and validate ACM certificate through appropriate Route 53 DNS validation record. 
+This setting is enabled by default in default parameters. During the ciinabox init stage, you will be
+asked if you want to utilise this functionality. Essentially, custom cloudformation resource based on
+python [aws-acm-validator](https://pypi.python.org/pypi/aws-acm-cert-validator) python package will
+request and validate ACM certificate through appropriate Route 53 DNS validation record.
 
 ### To disable during ciinabox setup
 
-Answer question below with 'y' during ciinabox init stage 
+Answer question below with 'y' during ciinabox init stage
 
 ```text
 Use selfsigned rather than ACM issued and validated certificate (y/n)? [n]
