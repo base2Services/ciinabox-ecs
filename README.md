@@ -307,6 +307,16 @@ internal_elb: false
 # needs internal_elb: true
 ```
 
+## Nginx Reverse Proxy Config
+
+If you need to pass in extra nginx configuration such as `client_max_body_size 100m;` to the proxy you can by adding the following text block to you params.yaml
+
+```yaml
+proxy_config: |
+  server_tokens off;
+  client_max_body_size 100m;
+```
+
 # Ciinabox configuration
 
 ## Bastion (Jumpbox) instance
