@@ -261,6 +261,23 @@ CloudFormation {
     end
   end
 
+  volumes = []
+  mount_points = []
+
+  # Timezone
+  volumes << { Name: 'timezone', Host: { SourcePath: '/etc/localtime' }}
+  mount_points << { ContainerPath: '/etc/localtime', SourceVolume: 'timezone', ReadOnly: true }
+
+  # Docker Socket
+  volumes << { Name: 'docker_sock', Host: { SourcePath: '/var/run/docker.sock' }}
+  mount_points << { ContainerPath: '/tmp/docker.sock', SourceVolume: 'docker_sock', ReadOnly: false }
+
+  # Proxy Config
+  if defined? proxy_config
+    volumes << { Name: 'proxy_config', Host: { SourcePath: '/opt/proxy/proxy_config.conf' }}
+    mount_points << { ContainerPath: '/etc/nginx/conf.d/proxy_config.conf', SourceVolume: 'proxy_config', ReadOnly: true }
+  end
+
   Resource('ProxyTask') {
     Type "AWS::ECS::TaskDefinition"
     Property('ContainerDefinitions', [
@@ -274,34 +291,10 @@ CloudFormation {
                 ContainerPort: 80
             }],
             Essential: true,
-            MountPoints: [
-                {
-                    ContainerPath: '/etc/localtime',
-                    SourceVolume: 'timezone',
-                    ReadOnly: true
-                },
-                {
-                    ContainerPath: '/tmp/docker.sock',
-                    SourceVolume: 'docker_sock',
-                    ReadOnly: false
-                }
-            ]
+            MountPoints: mount_points
         }
     ])
-    Property('Volumes', [
-        {
-            Name: 'timezone',
-            Host: {
-                SourcePath: '/etc/localtime'
-            }
-        },
-        {
-            Name: 'docker_sock',
-            Host: {
-                SourcePath: '/var/run/docker.sock'
-            }
-        }
-    ])
+    Property('Volumes', volumes)
   }
 
   Resource('ProxyService') {
