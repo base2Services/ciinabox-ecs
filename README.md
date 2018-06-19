@@ -358,6 +358,19 @@ bastionAMI:
 
 ```
 
+## Vpn (OpenVpn) instance
+
+You can create a openvpn access server instance complete by using the bellow config. It will create a new ecs cluster in the public subnet and launch [base2/openvpn-as](https://hub.docker.com/r/base2/openvpn-as/) container. It mounts a data volume to persist all configuration and logs in `/data`. Uses the existing `ecs_ami` as the underlying instance ami.
+
+```yaml
+include_vpn_stack: true
+```
+
+It is also possible to override the vpn instance type used for Launch Configuration. Defaults are below
+
+```yaml
+vpnInstanceType: t2.small
+```
 
 ## IAM Roles
 
