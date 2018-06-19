@@ -162,6 +162,22 @@ CloudFormation {
     if not ecs_block_device_mapping.empty?
       Property("BlockDeviceMappings", ecs_block_device_mapping)
     end
+    if defined? proxy_config
+      Metadata(
+        'AWS::CloudFormation::Init': {
+          config: {
+            files: {
+              '/opt/proxy/proxy_config.conf': {
+                content: proxy_config,
+                mode: "000644",
+                owner: "root",
+                group: "root"
+              }
+            }
+          }
+        }
+      )
+    end
     UserData FnBase64(FnJoin("", [
         "#!/bin/bash\n",
         "echo ECS_CLUSTER=", Ref('ECSCluster'), " >> /etc/ecs/ecs.config\n",
