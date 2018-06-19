@@ -20,6 +20,60 @@ CloudFormation do
   Mapping('EnvironmentType', Mappings['EnvironmentType'])
   Mapping('ecsAMI', ecs_ami)
 
+  security_groups = []
+
+  rules = []
+  opsAccess.each do |ip|
+    rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '9443', ToPort: '9443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '943', ToPort: '943', CidrIp: ip }
+    rules << { IpProtocol: 'udp', FromPort: '1194', ToPort: '1194', CidrIp: ip }
+  end
+
+  Resource("VpnSecurityGroupOps") {
+    Type 'AWS::EC2::SecurityGroup'
+    Property('VpcId', Ref('VPC'))
+    Property('GroupDescription', 'Ops External Access')
+    Property('SecurityGroupIngress', rules)
+  }
+
+  security_groups << Ref('VpnSecurityGroupOps')
+
+  rules = []
+  devAccess.each do |ip|
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '9443', ToPort: '9443', CidrIp: ip }
+    rules << { IpProtocol: 'tcp', FromPort: '943', ToPort: '943', CidrIp: ip }
+    rules << { IpProtocol: 'udp', FromPort: '1194', ToPort: '1194', CidrIp: ip }
+  end
+
+  Resource("VpnSecurityGroupDev") {
+    Type 'AWS::EC2::SecurityGroup'
+    Property('VpcId', Ref('VPC'))
+    Property('GroupDescription', 'Dev Team Access')
+    Property('SecurityGroupIngress', rules)
+  }
+
+  security_groups << Ref('VpnSecurityGroupDev')
+
+  if vpn_udp_public
+
+    rules = []
+    publicAccess.each do |ip|
+      rules << { IpProtocol: 'udp', FromPort: '1194', ToPort: '1194', CidrIp: ip }
+    end
+
+    Resource("VpnSecurityGroupPublic") {
+      Type 'AWS::EC2::SecurityGroup'
+      Property('VpcId', Ref('VPC'))
+      Property('GroupDescription', 'VPN Access')
+      Property('SecurityGroupIngress', rules)
+    }
+
+    security_groups << Ref('VpnSecurityGroupPublic')
+  end
+
   IAM_Role("Role") {
     AssumeRolePolicyDocument({
       Statement: [
@@ -124,7 +178,7 @@ CloudFormation do
     KeyName FnFindInMap('EnvironmentType', 'ciinabox', 'KeyName')
     AssociatePublicIpAddress true
     IamInstanceProfile Ref('InstanceProfile')
-    SecurityGroups [ Ref('SecurityGroupDev'), Ref('SecurityGroupBackplane'), Ref('SecurityGroupOps') ]
+    SecurityGroups security_groups
     Property('InstanceType', vpnInstanceType)
     UserData FnBase64(FnJoin('',[
         "#!/bin/bash\n",
@@ -134,10 +188,15 @@ CloudFormation do
         "echo \"NEW_HOSTNAME=$NEW_HOSTNAME\" \n",
         "hostname $NEW_HOSTNAME\n",
         "sed -i \"s/^HOSTNAME=.*/HOSTNAME=$NEW_HOSTNAME/\" /etc/sysconfig/network\n",
-        "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref('VpnVolume'), " --instance-id ${INSTANCE_ID} --device /dev/sdf\n",
-        "mkdir /data \n",
-        "e2fsck -fy /dev/xvdb ; if [ $? -eq 8 ]; then mkfs.ext4 /dev/xvdb && mount /dev/xvdb /data; else mount /dev/xvdb /data && \\ \n",
+        "stop ecs\n",
+        "service docker stop\n",
+        "aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref('VpnVolume'), " --instance-id ${INSTANCE_ID} --device /dev/sdb\n",
         'aws --region ', Ref('AWS::Region'), ' ec2 associate-address --allocation-id ', FnGetAtt('VpnIPAddress','AllocationId') ," --instance-id ${INSTANCE_ID}\n",
+        "sleep 3\n",
+        "mkdir /data \n",
+        "e2fsck -fy /dev/xvdb ; if [ $? -eq 8 ]; then mkfs.ext4 /dev/xvdb && mount /dev/xvdb /data; else mount /dev/xvdb /data; fi\n",
+        "service docker start\n",
+        "start ecs\n",
     ]))
   }
 
@@ -162,7 +221,7 @@ CloudFormation do
     DependsOn ['VpnIPAddress']
     HostedZoneName FnJoin('', [ dns_domain, '.' ])
     Comment 'Vpn record set'
-    Name FnJoin('', [ 'ov.',  Ref('EnvironmentName') , '.', dns_domain, '.' ])
+    Name FnJoin('', [ 'opvn.', dns_domain, '.' ])
     Type 'A'
     TTL '60'
     ResourceRecords [  Ref('VpnIPAddress') ]
@@ -176,6 +235,7 @@ CloudFormation do
         Cpu: '1024',
         Image: 'base2/openvpn-as',
         Essential: true,
+        Privileged: true,
         MountPoints: [
           {
             ContainerPath: '/etc/localtime',
@@ -210,6 +270,10 @@ CloudFormation do
   ECS_Service('OpenVpnService') {
     Cluster Ref('CiinaboxVpn')
     DesiredCount 1
+    DeploymentConfiguration({
+      MaximumPercent: 100,
+      MinimumHealthyPercent: 0
+    })
     TaskDefinition Ref('OpenVpnTask')
   }
 
