@@ -12,3 +12,14 @@ for that task within CLI wrapper.
 ### Adding new services
 
 - Add template in `templates/services/service_name.rb`
+
+
+### Setting up travis builds and tests
+
+Due travis limitation of secrets not being available in PR builds, cloudformation templates are not validated in PR
+builds. However, you should still have them executed on your own forks in travis. To setup builds, add following secrets
+in
+
+- `AWS_REGION=us-east-1` - (or any other region you deem appropriate)
+- `AWS_ACCESS_KEY_ID` - your limited access key having only `cloudformation:ValidateTemplate` permissions
+- `AWS_SECRET_ACCESS_KEY` - your limited access key having only `cloudformation:ValidateTemplate` permissions

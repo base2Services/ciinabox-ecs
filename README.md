@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/base2services/ciinabox-ecs.svg?branch=develop)](https://travis-ci.com/base2services/ciinabox-ecs.svg?branch=develop)
+
 # ciinabox ECS
 
 ciinabox pronounced ciin a box is a set of automation for building
