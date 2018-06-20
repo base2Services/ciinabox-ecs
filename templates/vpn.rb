@@ -60,9 +60,7 @@ CloudFormation do
   if vpn_udp_public
 
     rules = []
-    publicAccess.each do |ip|
-      rules << { IpProtocol: 'udp', FromPort: '1194', ToPort: '1194', CidrIp: ip }
-    end
+    rules << { IpProtocol: 'udp', FromPort: '1194', ToPort: '1194', CidrIp: '0.0.0.0/0' }
 
     Resource("VpnSecurityGroupPublic") {
       Type 'AWS::EC2::SecurityGroup'
