@@ -37,6 +37,7 @@ script:
         exit 2
       fi
     done
+  - cd ..
 deploy:
   provider: rubygems
   api_key: "${RUBYGEMS_API_KEY}"
