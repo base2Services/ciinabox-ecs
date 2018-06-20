@@ -11,6 +11,8 @@ require 'tempfile'
 require 'json'
 require_relative './ext/common_helper'
 require_relative './ext/zip_helper'
+require 'aws-sdk-s3'
+require 'aws-sdk-cloudformation'
 require 'ciinabox-ecs' if Gem::Specification::find_all_by_name('ciinabox-ecs').any?
 
 namespace :ciinabox do
@@ -387,6 +389,13 @@ namespace :ciinabox do
   desc('Package Lambda Functions as ZipFiles')
   task :package_lambdas do
     check_active_ciinabox(config)
+
+    # custom lambda modification
+    lambda_stack_required = config['acm_auto_issue_validate']
+    # in future any new conditions for lambda stack would be added here
+    # lambda_stack_required ||= some_new_condition
+    config['lambdas'] = nil unless lambda_stack_required
+
     if !config['lambdas'].nil? && !config['lambdas']['functions'].nil?
       log_header 'Package lambda functions'
 
@@ -523,6 +532,52 @@ namespace :ciinabox do
     # as we don't want to remove any comments
     remove_update_ciinabox_config_setting('default_ssl_cert_id', cert_arn)
     puts "Set #{cert_arn} as default_cert_arn"
+  end
+
+
+  desc('validate cloudformation templates')
+  task :validate do
+    cfn = Aws::CloudFormation::Client.new(region: config['source_region'])
+    s3 = Aws::S3::Client.new(region: config['source_region'])
+    Dir.glob("output/**/*.json") do |file|
+      template_content = IO.read(file)
+      # Skip if empty template generated
+      next if(template_content == "null\n")
+      template = File.open(file, 'rb')
+      filename = File.basename file
+      template_bytesize = template_content.bytesize
+      file_size = File.size file
+      local_validation = (template_content.bytesize < 51200)
+      puts "INFO - #{file}: Filesize: #{file_size}, Bytesize: #{template_bytesize}, local validation: #{local_validation}"
+      begin
+        if not local_validation
+          puts "INFO - Copy #{file} -> s3://#{config['source_bucket']}/cloudformation/#{project_name}/validate/#{filename}"
+          s3.put_object({
+              body: template,
+              bucket: "#{config['source_bucket']}",
+              key: "cloudformation/#{project_name}/validate/#{filename}",
+          })
+          template_url = "https://#{config['source_bucket']}.s3.amazonaws.com/cloudformation/#{project_name}/validate/#{filename}"
+          puts "INFO - Copied #{file} to s3://#{config['source_bucket']}/cloudformation/#{project_name}/validate/#{filename}"
+          puts "INFO - Validating #{template_url}"
+        else
+          puts "INFO - Validating #{file}"
+        end
+        begin
+          resp = cfn.validate_template({template_url: template_url}) unless local_validation
+          resp = cfn.validate_template({template_body: template_content}) if local_validation
+          puts "INFO - Template #{filename} validated successfully"
+        rescue => e
+          puts "ERROR - Template #{filename} failed to validate: #{e}"
+          exit 1
+        end
+
+      rescue => e
+        puts "ERROR - #{e.class}, #{e}"
+        exit 1
+      end
+    end
+    puts "INFO - #{Dir["output/**/*.json"].count} templates validated successfully"
   end
 
   def add_ciinabox_config_setting(element, value)

@@ -315,3 +315,7 @@ acm_auto_issue_validate: true
 include_vpn_stack: false
 # open the vpn upd connection port 1194 to all ips
 vpn_udp_public: false
+
+# Default public access is considered whole internet
+publicAccess:
+  - 0.0.0.0/0
