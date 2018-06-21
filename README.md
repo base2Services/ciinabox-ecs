@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/base2services/ciinabox-ecs.svg?branch=develop)](https://travis-ci.com/base2services/ciinabox-ecs.svg?branch=develop)
+[![Build Status](https://api.travis-ci.com/base2Services/ciinabox-ecs.svg?branch=develop)](https://api.travis-ci.com/base2Services/ciinabox-ecs.svg?branch=develop)
+
 
 # ciinabox ECS
 
