@@ -35,11 +35,7 @@ CloudFormation do
   }
 
   # ECS Services Stack
-  Resource('ECSServicesStack') {
-    Type 'AWS::CloudFormation::Stack'
-    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/ecs-services.json")
-    Property('TimeoutInMinutes', 15)
-    Property('Parameters',{
+  services_params = {
       ECSCluster: Ref(cluster_name),
       VPC: FnGetAtt('VPCStack', 'Outputs.VPCId'),
       SubnetPublicA: FnGetAtt('VPCStack', 'Outputs.SubnetPublicA'),
@@ -51,8 +47,14 @@ CloudFormation do
       SecurityGroupOps: FnGetAtt('VPCStack', 'Outputs.SecurityGroupOps'),
       SecurityGroupDev: FnGetAtt('VPCStack', 'Outputs.SecurityGroupDev'),
       SecurityGroupNatGateway: FnGetAtt('VPCStack', 'Outputs.SecurityGroupNatGateway'),
-      CRAcmCertArn: FnGetAtt('LambdasStack','Outputs.LambdaCRIssueACMCertificateArn')
-    })
+  }
+  services_params[:CRAcmCertArn] = FnGetAtt('LambdasStack','Outputs.LambdaCRIssueACMCertificateArn') if acm_auto_issue_validate
+
+  Resource('ECSServicesStack') {
+    Type 'AWS::CloudFormation::Stack'
+    Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/ecs-services.json")
+    Property('TimeoutInMinutes', 15)
+    Property('Parameters',services_params)
   }
 
   #These are the commona params for use below in "foreign templates
@@ -70,12 +72,15 @@ CloudFormation do
     base_params.merge!("RouteTablePrivate#{az}" => FnGetAtt('VPCStack', "Outputs.RouteTablePrivate#{az}"))
   end
 
-  # Lambda functions stack
+  lambda_stack_required = acm_auto_issue_validate
+  # in future any new conditions for lambda stack would be added here
+  # lambda_stack_required ||= some_new_condition
+  # in future any new conditions for lambda stack would be added here
   Resource('LambdasStack') do
     Type 'AWS::CloudFormation::Stack'
     Property('TemplateURL', "https://#{source_bucket}.s3.amazonaws.com/ciinabox/#{ciinabox_version}/lambdas.json")
     Property('Parameters', base_params)
-  end
+  end if lambda_stack_required
 
 
   # Bastion if required

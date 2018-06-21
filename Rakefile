@@ -11,6 +11,8 @@ require 'tempfile'
 require 'json'
 require_relative './ext/common_helper'
 require_relative './ext/zip_helper'
+require 'aws-sdk-s3'
+require 'aws-sdk-cloudformation'
 require 'ciinabox-ecs' if Gem::Specification::find_all_by_name('ciinabox-ecs').any?
 
 namespace :ciinabox do
@@ -38,7 +40,7 @@ namespace :ciinabox do
     config = default_params
   end
 
-  Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].each { |config_file|
+  Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].each {|config_file|
     if not config_file.include?('params.yml')
       config = config.merge(YAML.load(File.read(config_file)))
     end
@@ -48,12 +50,12 @@ namespace :ciinabox do
 
   # ciinabox binary version
   if Gem.loaded_specs['ciinabox-ecs'].nil?
-    config['ciinabox_binary_version'] = `git rev-parse --short HEAD`.gsub("\n",'')
+    config['ciinabox_binary_version'] = `git rev-parse --short HEAD`.gsub("\n", '')
   else
     config['ciinabox_binary_version'] = Gem.loaded_specs['ciinabox-ecs'].version.to_s
   end
 
-  File.write('debug-ciinabox.config.yaml',config.to_yaml) if ENV['DEBUG']
+  File.write('debug-ciinabox.config.yaml', config.to_yaml) if ENV['DEBUG']
 
   stack_name = config["stack_name"] || "ciinabox"
 
@@ -64,8 +66,8 @@ namespace :ciinabox do
     templates2 = Dir["#{ciinaboxes_dir}/#{ciinabox_name}/templates/**/*.rb"]
 
     ## we want to exclude overridden templates
-    templatesLocalFileNames = templates2.collect { |templateFile| File.basename(templateFile) }
-    templates = templates.select { |templateFile| not templatesLocalFileNames.include? File.basename(templateFile) }
+    templatesLocalFileNames = templates2.collect {|templateFile| File.basename(templateFile)}
+    templates = templates.select {|templateFile| not templatesLocalFileNames.include? File.basename(templateFile)}
     templates = templates + templates2
   end
 
@@ -87,13 +89,13 @@ namespace :ciinabox do
     tmp_file = write_config_tmp_file(config)
 
     CfnDsl::RakeTask.new do |t|
-      extras = [[:yaml,"#{current_dir}/config/default_params.yml"]]
+      extras = [[:yaml, "#{current_dir}/config/default_params.yml"]]
       extras << [:yaml, "#{current_dir}/config/default_lambdas.yml"]
       if File.exist? "#{ciinaboxes_dir}/ciinabox_config.yml"
         extras << [:yaml, "#{ciinaboxes_dir}/ciinabox_config.yml"]
       end
-      (Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].map { |f| [:yaml,f]}).each {|c| extras<<c}
-      extras << [:ruby,"#{current_dir}/ext/helper.rb"]
+      (Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].map {|f| [:yaml, f]}).each {|c| extras << c}
+      extras << [:ruby, "#{current_dir}/ext/helper.rb"]
       extras << [:yaml, tmp_file.path]
       t.cfndsl_opts = {
           verbose: true,
@@ -165,16 +167,16 @@ namespace :ciinabox do
     if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
       config_output = user_params.merge(input_hash) #Merges input hash into user-provided template
       config_yaml = config_output.to_yaml #Convert output to YAML for writing
-      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml", 'w') { |f| f.write(config_yaml) }
+      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml", 'w') {|f| f.write(config_yaml)}
     else
-      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml", 'w') { |f| f.write(input_result) }
+      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml", 'w') {|f| f.write(input_result)}
     end
 
     default_services = YAML.load(File.read("#{current_dir}/config/default_services.yml"))
 
     class ::Hash
       def deep_merge(second)
-        merger = proc { |key, v1, v2| Hash === v1 && Hash === v2 ? v1.merge(v2, &merger) : Array === v1 && Array === v2 ? v1 | v2 : [:undefined, nil, :nil].include?(v2) ? v1 : v2 }
+        merger = proc {|key, v1, v2| Hash === v1 && Hash === v2 ? v1.merge(v2, &merger) : Array === v1 && Array === v2 ? v1 | v2 : [:undefined, nil, :nil].include?(v2) ? v1 : v2}
         self.merge(second.to_h, &merger)
       end
     end
@@ -184,10 +186,10 @@ namespace :ciinabox do
       user_services = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml"))
       combined_services = default_services.deep_merge(user_services)
       yml_combined_services = combined_services.to_yaml
-      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml", 'w') { |f| f.write(yml_combined_services) }
+      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml", 'w') {|f| f.write(yml_combined_services)}
     else
       yml_default_services = default_services.to_yaml
-      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml", 'w') { |f| f.write(yml_default_services) }
+      File.open("#{ciinaboxes_dir}/#{ciinabox_name}/config/services.yml", 'w') {|f| f.write(yml_default_services)}
     end
 
     display_active_ciinabox ciinaboxes_dir, ciinabox_name
@@ -251,7 +253,7 @@ namespace :ciinabox do
     check_active_ciinabox(config)
     ciinabox_name = config['ciinabox_name']
     cert_dir = "#{ciinaboxes_dir}/#{ciinabox_name}"
-    status, result = aws_execute( config, [
+    status, result = aws_execute(config, [
         'iam', 'upload-server-certificate',
         '--server-certificate-name ciinabox',
         "--certificate-body file://#{cert_dir}/ssl/ciinabox.crt",
@@ -387,6 +389,13 @@ namespace :ciinabox do
   desc('Package Lambda Functions as ZipFiles')
   task :package_lambdas do
     check_active_ciinabox(config)
+
+    # custom lambda modification
+    lambda_stack_required = config['acm_auto_issue_validate']
+    # in future any new conditions for lambda stack would be added here
+    # lambda_stack_required ||= some_new_condition
+    config['lambdas'] = nil unless lambda_stack_required
+
     if !config['lambdas'].nil? && !config['lambdas']['functions'].nil?
       log_header 'Package lambda functions'
 
@@ -513,7 +522,7 @@ namespace :ciinabox do
         '--out json'
     ])
     resp = JSON.parse(result)
-    cert_output = resp['Stacks'][0]['Outputs'].find { |k| k['OutputKey'] == 'DefaultSSLCertificate' }
+    cert_output = resp['Stacks'][0]['Outputs'].find {|k| k['OutputKey'] == 'DefaultSSLCertificate'}
     if cert_output.nil?
       STDERR.puts("ACM certificate is not present in stack outputs")
       exit -1
@@ -525,6 +534,64 @@ namespace :ciinabox do
     puts "Set #{cert_arn} as default_cert_arn"
   end
 
+
+  desc('validate cloudformation templates')
+  task :validate do
+    cfn = Aws::CloudFormation::Client.new(region: config['source_region'])
+    s3 = Aws::S3::Client.new(region: config['source_region'])
+    Dir.glob("output/**/*.json") do |file|
+      template_content = IO.read(file)
+      # Skip if empty template generated
+      next if (template_content == "null\n")
+      template = File.open(file, 'rb')
+      filename = File.basename file
+      template_bytesize = template_content.bytesize
+      file_size = File.size file
+      local_validation = (template_content.bytesize < 51200)
+      puts "INFO - #{file}: Filesize: #{file_size}, Bytesize: #{template_bytesize}, local validation: #{local_validation}"
+      begin
+        if not local_validation
+          puts "INFO - Copy #{file} -> s3://#{config['source_bucket']}/cloudformation/#{project_name}/validate/#{filename}"
+          s3.put_object({
+              body: template,
+              bucket: "#{config['source_bucket']}",
+              key: "cloudformation/#{project_name}/validate/#{filename}",
+          })
+          template_url = "https://#{config['source_bucket']}.s3.amazonaws.com/cloudformation/#{project_name}/validate/#{filename}"
+          puts "INFO - Copied #{file} to s3://#{config['source_bucket']}/cloudformation/#{project_name}/validate/#{filename}"
+          puts "INFO - Validating #{template_url}"
+        else
+          puts "INFO - Validating #{file}"
+        end
+        begin
+          resp = cfn.validate_template({ template_url: template_url }) unless local_validation
+          resp = cfn.validate_template({ template_body: template_content }) if local_validation
+          puts "INFO - Template #{filename} validated successfully"
+        rescue => e
+          puts "ERROR - Template #{filename} failed to validate: #{e}"
+          exit 1
+        end
+
+      rescue => e
+        puts "ERROR - #{e.class}, #{e}"
+        exit 1
+      end
+    end
+    puts "INFO - #{Dir["output/**/*.json"].count} templates validated successfully"
+  end
+
+  desc('vendor templates from ciinabox gem into ciinabox folder')
+  task :vendor do
+    Dir["#{current_dir}/templates/**/*.rb"].each do |template_path|
+      relative_path = template_path.gsub("#{current_dir}/", '')
+      target_path = "#{@ciinaboxes_dir}/#{@ciinabox_name}/#{relative_path}"
+      target_dir = File.dirname(target_path)
+      FileUtils.mkdir_p target_dir
+      puts "#{relative_path} -> #{target_path}"
+      FileUtils.copy template_path, target_path
+    end
+  end
+
   def add_ciinabox_config_setting(element, value)
     file_name = "#{@ciinaboxes_dir}/#{@ciinabox_name}/config/params.yml"
     File.write(file_name,
@@ -534,7 +601,7 @@ namespace :ciinabox do
     )
   end
 
-  def remove_update_ciinabox_config_setting(element, new_value='')
+  def remove_update_ciinabox_config_setting(element, new_value = '')
     f = File.new("#{@ciinaboxes_dir}/#{@ciinabox_name}/config/params.yml", 'r+')
     found = false
     f.each do |line|
@@ -550,7 +617,7 @@ namespace :ciinabox do
       end
     end
     f.close
-    add_ciinabox_config_setting(element, new_value) if((not found) and (not new_value.empty?))
+    add_ciinabox_config_setting(element, new_value) if ((not found) and (not new_value.empty?))
   end
 
   def check_active_ciinabox(config)
@@ -608,12 +675,12 @@ namespace :ciinabox do
     question = ("#{question} (y/n)? [#{default ? 'y' : 'n'}]")
     while true
       case get_input(question)
-        when ''
-          return default
-        when 'Y', 'y', 'yes'
-          return true
-        when /\A[nN]o?\Z/ #n or no
-          return false
+      when ''
+        return default
+      when 'Y', 'y', 'yes'
+        return true
+      when /\A[nN]o?\Z/ #n or no
+        return false
       end
     end
   end

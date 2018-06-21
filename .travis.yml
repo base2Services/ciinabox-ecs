@@ -1,0 +1,46 @@
+sudo: required
+dist: trusty
+rvm:
+  - 2.3
+python:
+  - 3.6
+#before_install:
+#  - |
+#    sudo apt-get update && \
+#    sudo apt-get install software-properties-common  -y && \
+#    sudo add-apt-repository ppa:deadsnakes/ppa -y && \
+#    sudo apt-add-repository ppa:brightbox/ruby-ng -y && \
+#    sudo apt-get update && sudo apt-get install python3.6 python3-pip -y && \
+#    sudo apt-get install ruby2.3 -y
+script:
+  - gem build ciinabox-ecs.gemspec
+  - gem install ciinabox-ecs-*.gem
+  - which ciinabox-ecs && ciinabox-ecs help
+  - cfndsl -u
+  - |
+    git clone https://github.com/base2services/ciinabox-ecs-examples
+    cd ciinabox-ecs-examples
+    which pip
+    git checkout master
+    set -x
+    for ciinabox in demo_* ; do
+      printf "\n\nTesting ${ciinabox}\n\n"
+      # avoid validation in PRs as aws creds are not available
+      set +e
+      if [[ "$TRAVIS_EVENT_TYPE" =~ ^push|api$ ]]; then
+        ciinabox-ecs generate validate ${ciinabox}
+      else
+        ciinabox-ecs generate ${ciinabox}
+      fi
+      if [ $? -ne 0 ]; then
+        printf "\n\nCIINABOX test configuration ${ciinabox} failed\n\n"
+        exit 2
+      fi
+    done
+  - cd ..
+deploy:
+  provider: rubygems
+  api_key: "${RUBYGEMS_API_KEY}"
+  on:
+   all_branches: true
+   condition: $TRAVIS_BRANCH =~ ^develop|master &&  $TRAVIS_EVENT_TYPE =~ ^push|api$ && $TRAVIS_REPO_SLUG == "base2Services/ciinabox-ecs"

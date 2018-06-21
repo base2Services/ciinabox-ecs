@@ -158,7 +158,7 @@ class Lambdas
           end
         end
 
-      end
+      end if (config.key? 'lambdas' and (not config['lambdas'].nil?))
 
     end
   end
