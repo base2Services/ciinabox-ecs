@@ -266,11 +266,19 @@ namespace :ciinabox do
       check_active_ciinabox(config)
       status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
       if status != 0
-        puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
-        Notifier.notify(
-            title: "ciinabox-ecs: #{config['ciinabox_name']}",
-            message: "fail to get status for #{config['ciinabox_name']}...has it been created?"
-        )
+        if last_status == ""
+          puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
+          Notifier.notify(
+              title: "ciinabox-ecs: #{config['ciinabox_name']}",
+              message: "fail to get status for #{config['ciinabox_name']}...has it been created?"
+          )
+        else
+          puts "fail to get status for #{config['ciinabox_name']} disappeared from listing"
+          Notifier.notify(
+              title: "ciinabox-ecs: #{config['ciinabox_name']}",
+              message: "fail to get status for #{config['ciinabox_name']} disappeared from listing"
+          )
+        end
         exit 1
       end
       output = result.chop!
