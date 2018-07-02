@@ -243,16 +243,16 @@ namespace :ciinabox do
       end
       output = result.chop!
       if output == 'CREATE_COMPLETE' || output == 'UPDATE_COMPLETE'
-        puts Time.now.strftime("%Y/&m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
         display_ecs_ip_address config
         return
       elsif output == 'ROLLBACK_COMPLETE'
-        puts Time.now.strftime("%Y/&m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed and rolled back"
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed and rolled back"
         return
       else
-        puts Time.now.strftime("%Y/&m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
       end
-      sleep(4.seconds)
+      sleep(4)
     end
   end
 
