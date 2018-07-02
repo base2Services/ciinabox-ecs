@@ -51,6 +51,7 @@ up                   |Turn on your ciinabox environment
 update               |Updates the ciinabox environment
 update_cert_to_acm   |Replace previously auto-generated IAM certificate with auto-validated ACM certificate (if one exists)
 upload_server_cert   |Uploads SSL server certs for ciinabox
+watch                |Monitors status of the active ciinabox until failed or successful
 
 ```
 
