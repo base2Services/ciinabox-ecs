@@ -233,7 +233,7 @@ namespace :ciinabox do
 
   desc('Watches the status of the active ciinabox')
   task :watch do
-
+    last_status = ""
     while true
       check_active_ciinabox(config)
       status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
@@ -242,6 +242,7 @@ namespace :ciinabox do
         exit 1
       end
       output = result.chop!
+      next if last_status == output
       if output == 'CREATE_COMPLETE' || output == 'UPDATE_COMPLETE'
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
         display_ecs_ip_address config
@@ -252,25 +253,8 @@ namespace :ciinabox do
       else
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
       end
+      last_status = output
       sleep(4)
-    end
-  end
-
-  desc('Creates the source bucket for deploying ciinabox')
-  task :create_source_bucket do
-    check_active_ciinabox(config)
-    status, result = aws_execute(config, ['s3', 'ls', "s3://#{config['source_bucket']}/ciinabox/#{config['ciinabox_version']}/"])
-    if status != 0
-      status, result = aws_execute(config, ['s3', 'mb', "s3://#{config['source_bucket']}"])
-      puts result
-      if status != 0
-        puts "fail to create source bucket see error logs for details"
-        exit status
-      else
-        puts "Successfully created S3 source deployment bucket #{config['source_bucket']}"
-      end
-    else
-      puts "Source deployment bucket #{config['source_bucket']} already exists"
     end
   end
 
