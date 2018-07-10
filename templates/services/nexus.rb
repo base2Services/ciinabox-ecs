@@ -6,6 +6,7 @@ if !defined? timezone
 end
 
 image = 'base2/ciinabox-nexus'
+container_path = '/sonatype-work'
 java_opts = ''
 memory = 1024
 cpu = 300
@@ -14,6 +15,7 @@ service = lookup_service('nexus', services)
 if service
   java_opts = service['JAVA_OPTS'] || ''
   image = service['ContainerImage'] || image
+  container_path = service['ContainerPath'] || container_path
   memory = service['ContainerMemory'] || 1024
   cpu = service['ContainerCPU'] || 300
   container_port = service['InstancePort'] || 0
@@ -58,7 +60,7 @@ CloudFormation {
             ReadOnly: true
           },
           {
-            ContainerPath: '/sonatype-work',
+            ContainerPath: container_path,
             SourceVolume: 'nexus_data',
             ReadOnly: false
           }

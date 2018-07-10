@@ -134,6 +134,12 @@ CloudFormation {
     end
   end
 
+  proxy_config_userdata = ''
+  if defined? proxy_config
+    proxy_config_userdata = "mkdir -p /opt/proxy && " +
+                            "echo \"#{proxy_config}\" >> /opt/proxy/proxy_config.conf\n"
+  end
+
   ecs_allow_sg_ingress = [
     { IpProtocol: 'tcp', FromPort: '32768', ToPort: '65535', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
   ]
@@ -162,27 +168,12 @@ CloudFormation {
     if not ecs_block_device_mapping.empty?
       Property("BlockDeviceMappings", ecs_block_device_mapping)
     end
-    if defined? proxy_config
-      Metadata(
-        'AWS::CloudFormation::Init': {
-          config: {
-            files: {
-              '/opt/proxy/proxy_config.conf': {
-                content: proxy_config,
-                mode: "000644",
-                owner: "root",
-                group: "root"
-              }
-            }
-          }
-        }
-      )
-    end
     UserData FnBase64(FnJoin("", [
         "#!/bin/bash\n",
         "echo ECS_CLUSTER=", Ref('ECSCluster'), " >> /etc/ecs/ecs.config\n",
         "INSTANCE_ID=$(echo `/opt/aws/bin/ec2-metadata -i | cut -f2 -d:`)\n",
         "PRIVATE_IP=`/opt/aws/bin/ec2-metadata -o | cut -f2 -d: | cut -f2 -d-`\n",
+        "#{proxy_config_userdata}",
         "yum install -y python-pip\n",
         "python-pip install --upgrade awscli\n",
         "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref(volume_name), " --instance-id ${INSTANCE_ID} --device /dev/sdf\n",
