@@ -277,6 +277,9 @@ namespace :ciinabox do
     check_active_ciinabox(config)
     ciinabox_name = config['ciinabox_name']
     keypair_dir = "#{ciinaboxes_dir}/#{ciinabox_name}/ssl"
+    unless config['include_bastion_stack']
+      puts "include_bastion_stack is set to false; it's recommend that this is set to true if you wish to ssh to the host."
+    end
     if File.exists?("#{keypair_dir}/ciinabox.pem")
       puts "keypair for ciinabox #{ciinabox_name} already exists...please delete if you wish to re-create it"
       exit 1
@@ -378,6 +381,10 @@ namespace :ciinabox do
 
   desc('SSH into your ciinabox environment')
   task :ssh do
+    unless config['include_bastion_stack']
+      puts "include_bastion_stack is set to false; you can't ssh into nothing."
+      exit 1
+    end
     keypair = "#{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem"
     `ssh-add #{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem`
     puts "# execute the following:"
