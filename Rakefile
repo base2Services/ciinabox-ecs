@@ -438,6 +438,7 @@ namespace :ciinabox do
         unless lambda_config['package_cmd'].nil?
           package_cmd = "cd #{lambda_source_dir} && #{lambda_config['package_cmd']}"
           puts 'Processing package command...'
+          puts "- " + package_cmd if verbose==true
           package_result = system(package_cmd)
           unless package_result
             puts "Error packaging lambda function, following command failed\n\n#{package_cmd}\n\n"
@@ -533,6 +534,7 @@ namespace :ciinabox do
     remove_update_ciinabox_config_setting('default_ssl_cert_id', cert_arn)
     puts "Set #{cert_arn} as default_cert_arn"
   end
+
 
 
   desc('validate cloudformation templates')
@@ -719,6 +721,7 @@ namespace :ciinabox do
     cmd += " --source-bucket #{config['source_bucket']}"
     cmd += " --region #{config['source_region']}"
     cmd += " --profile #{config['aws_profile']}" if not config['aws_profile'].nil?
+    puts "- " + cmd if verbose==true
     result = system(cmd)
     exit -1 if not result
   end
