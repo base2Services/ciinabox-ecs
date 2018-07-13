@@ -14,6 +14,7 @@ require_relative './ext/zip_helper'
 require 'aws-sdk-s3'
 require 'aws-sdk-cloudformation'
 require 'ciinabox-ecs' if Gem::Specification::find_all_by_name('ciinabox-ecs').any?
+require 'notifier'
 
 namespace :ciinabox do
 
@@ -249,6 +250,59 @@ namespace :ciinabox do
         exit 0
       elsif output == 'ROLLBACK_COMPLETE'
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed and rolled back"
+        exit 1
+      else
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
+      end
+      last_status = output
+      sleep(4)
+    end
+  end
+
+  desc('Watches the status of the active ciinabox and sends a desktop notification message')
+  task :watch_notify do
+    last_status = ""
+    while true
+      check_active_ciinabox(config)
+      status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
+      if status != 0
+        if last_status == ""
+          puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
+          Notifier.notify(
+              title: "ciinabox-ecs: #{config['ciinabox_name']}",
+              message: "fail to get status for #{config['ciinabox_name']}...has it been created?"
+          )
+        else
+          puts "fail to get status for #{config['ciinabox_name']} disappeared from listing"
+          Notifier.notify(
+              title: "ciinabox-ecs: #{config['ciinabox_name']}",
+              message: "fail to get status for #{config['ciinabox_name']} disappeared from listing"
+          )
+        end
+        exit 1
+      end
+      output = result.chop!
+      next if last_status == output
+      if output == 'CREATE_COMPLETE' || output == 'UPDATE_COMPLETE'
+        Notifier.notify(
+            title: "ciinabox-ecs: #{config['ciinabox_name']}",
+            message: "ciinabox is alive!!!!"
+        )
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
+        display_ecs_ip_address config
+        exit 0
+      elsif output == 'ROLLBACK_IN_PROGRESS'
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed is being rolledback"
+        Notifier.notify(
+            title: "ciinabox-ecs: #{config['ciinabox_name']}",
+            message: "ciinabox has failed is being rolledback"
+            )
+      elsif output == 'ROLLBACK_COMPLETE'
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} rollbck completed"
+        Notifier.notify(
+            title: "ciinabox-ecs: #{config['ciinabox_name']}",
+            message: "rollbck completed"
+            )
         exit 1
       else
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
