@@ -415,7 +415,7 @@ namespace :ciinabox do
     keypair = "#{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem"
     `ssh-add #{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem`
     puts "# execute the following:"
-    puts "ssh -A ec2-user@nata.#{config['dns_domain']} -i #{keypair}"
+    puts "ssh -A ec2-user@bastion.#{config['dns_domain']} -i #{keypair}"
     puts "# and then"
     puts "ssh #{get_ecs_ip_address(config)}"
   end
