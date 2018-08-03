@@ -122,3 +122,8 @@ default_ssl_cert_id: "arn:aws:iam::198712987398:server-certificate/ciinabox"
 #      CertName: x
 #      SubnetOctetA: 11
 #      SubnetOctetB: 12
+
+#cloudwatch:
+#  target-arn: arn://
+#cloudstat:
+#  target-arn: arn://

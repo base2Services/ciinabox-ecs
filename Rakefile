@@ -29,7 +29,8 @@ namespace :ciinabox do
   @ciinabox_name = ciinabox_name
 
   #Load and merge standard ciinabox-provided parameters
-  default_params = YAML.load(File.read("#{current_dir}/config/default_params.yml")) if File.exist?("#{current_dir}/config/default_params.yml")
+  default_params = YAML.load(File.read("#{current_dir}/config/default_params.yml"))
+  default_jenkins_configuration_as_code = YAML.load(File.read("#{current_dir}/configurationascode/config/default_jenkins_configuration_as_code.yml"))
   lambda_params = YAML.load(File.read("#{current_dir}/config/default_lambdas.yml"))
   default_params.merge!(lambda_params)
 
@@ -41,10 +42,18 @@ namespace :ciinabox do
     config = default_params
   end
 
+  if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/jenkins_configuration_as_code.yml")
+    user_jenkins_configuration_as_code = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/configurationascode/jenkins_configuration_as_code.yml"))
+    jenkins_configuration_as_code = default_jenkins_configuration_as_code.merge(user_jenkins_configuration_as_code)
+  else
+    user_jenkins_configuration_as_code = {}
+    jenkins_configuration_as_code = default_jenkins_configuration_as_code
+  end
+
   Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].each {|config_file|
-    if not config_file.include?('params.yml')
-      config = config.merge(YAML.load(File.read(config_file)))
-    end
+    return if config_file.include?('params.yml')
+    return if config_file.include?('jenkins_configuration_as_code.yml')
+    config = config.merge(YAML.load(File.read(config_file)))
   }
   config['lambdas'] = {} unless config.key? 'lambdas'
   config['lambdas'].extend(config['default_lambdas'])

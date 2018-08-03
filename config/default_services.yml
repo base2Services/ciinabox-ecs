@@ -3,7 +3,8 @@
 services:
   - jenkins:
       # Optional Jenkins Service Parameters
-      # ContainerImage: base2/ciinabox-jenkins:2.0
+#      ContainerImage: base2/ciinabox-jenkins:cac
+      ContainerImage: aubelsb2/ciinabox-containers-jenkins-cac:latest
       # ContainerMemory: 4096
       # ContainerCPU: 300
       # JAVA_OPTS: -Xmx4096m
