@@ -51,8 +51,8 @@ namespace :ciinabox do
   end
 
   Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].each {|config_file|
-    return if config_file.include?('params.yml')
-    return if config_file.include?('jenkins_configuration_as_code.yml')
+    next if config_file.include?('params.yml')
+    next if config_file.include?('jenkins_configuration_as_code.yml')
     config = config.merge(YAML.load(File.read(config_file)))
   }
   config['lambdas'] = {} unless config.key? 'lambdas'
