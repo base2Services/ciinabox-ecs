@@ -30,7 +30,7 @@ namespace :ciinabox do
 
   #Load and merge standard ciinabox-provided parameters
   default_params = YAML.load(File.read("#{current_dir}/config/default_params.yml"))
-  default_jenkins_configuration_as_code = YAML.load(File.read("#{current_dir}/configurationascode/config/default_jenkins_configuration_as_code.yml"))
+  default_jenkins_configuration_as_code = YAML.load(File.read("#{current_dir}/config/default_jenkins_configuration_as_code.yml"))
   lambda_params = YAML.load(File.read("#{current_dir}/config/default_lambdas.yml"))
   default_params.merge!(lambda_params)
 
@@ -43,7 +43,7 @@ namespace :ciinabox do
   end
 
   if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/jenkins_configuration_as_code.yml")
-    user_jenkins_configuration_as_code = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/configurationascode/jenkins_configuration_as_code.yml"))
+    user_jenkins_configuration_as_code = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/jenkins_configuration_as_code.yml"))
     jenkins_configuration_as_code = default_jenkins_configuration_as_code.merge(user_jenkins_configuration_as_code)
   else
     user_jenkins_configuration_as_code = {}
@@ -55,6 +55,7 @@ namespace :ciinabox do
     next if config_file.include?('jenkins_configuration_as_code.yml')
     config = config.merge(YAML.load(File.read(config_file)))
   }
+
   config['lambdas'] = {} unless config.key? 'lambdas'
   config['lambdas'].extend(config['default_lambdas'])
 
@@ -91,7 +92,7 @@ namespace :ciinabox do
 
   # Generate cloudformation templates, includes packaging of lambda functions
   desc("Generate CloudFormation templates")
-  task :generate => ['ciinabox:package_lambdas'] do
+  task :generate => ['ciinabox:package_lambdas', 'ciinabox:package_cac'] do
     check_active_ciinabox(config)
     FileUtils.mkdir_p 'output/services'
 
@@ -569,6 +570,70 @@ namespace :ciinabox do
       end
 
       FileUtils.rmtree 'output/package_lambdas'
+    end
+  end
+
+  desc('Package Configuration As Code Functions as a TarFile')
+  task :package_cac do
+    check_active_ciinabox(config)
+
+    unless jenkins_configuration_as_code['jenkins'].nil?
+      log_header 'Package contains jenkins configuration'
+
+      FileUtils.rmtree 'output/configurationascode'
+
+      overlay_folder = "output/configurationascode/overlay/"
+      FileUtils.mkdir_p overlay_folder
+
+      def windows? #:nodoc:
+        RbConfig::CONFIG['host_os'] =~ /^(mswin|mingw|cygwin)/
+      end
+
+      dirs = ["#{current_dir}/configurationascode/root/", "#{}/output/configurationascode/overlay/"]
+      overlay_tar_file = 'output/configurationascode/overlay.tar'
+      puts "Creating tar..."+overlay_tar_file+"\n"
+      tar = Minitar::Output.new(overlay_tar_file)
+      begin
+        dirs.each do |dir|
+          Find.find(dir).
+              select {|name| File.file?(name) }.
+              each do |iname|
+            stats = {}
+            stat = File.stat(iname)
+            stats[:mode]   ||= stat.mode
+            stats[:mtime]  ||= stat.mtime
+            stats[:size] = stat.size
+
+            if windows?
+              stats[:uid]  = nil
+              stats[:gid]  = nil
+            else
+              stats[:uid]  ||= stat.uid
+              stats[:gid]  ||= stat.gid
+            end
+
+            nname = iname.slice dir.length, iname.length - dir.length
+            puts iname, nname
+
+            tar.tar.add_file_simple(nname, stats) do |os|
+              stats[:current] = 0
+              yield :file_start, nname, stats if block_given?
+              File.open(iname, 'rb') do |ff|
+                until ff.eof?
+                  stats[:currinc] = os.write(ff.read(4096))
+                  stats[:current] += stats[:currinc]
+                  yield :file_progress, name, stats if block_given?
+                end
+              end
+              yield :file_done, nname, stats if block_given?
+            end
+          end
+        end
+      ensure
+        tar.close
+        FileUtils.rmtree overlay_folder
+      end
+
     end
   end
 
