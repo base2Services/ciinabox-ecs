@@ -136,6 +136,18 @@ if defined? include_diind_slave and include_diind_slave
 end
 
 # If docker outside of docker slave is enabled
+if has_cac
+  jenkins_env = {
+      :Environment => []
+  }
+  jenkins_env[:Environment] << {
+      Name: 'SRCTAR',
+      Value: cac_tar_url(source_bucket, ciinabox_version),
+  }
+  container_definitions << jenkins_env
+end
+
+# If docker outside of docker slave is enabled
 if defined? include_dood_slave and include_dood_slave
   container_definitions[0][:Links] << 'jenkins-docker-dood-slave'
   dood_definition =  {

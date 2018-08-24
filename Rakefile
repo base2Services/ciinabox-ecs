@@ -11,10 +11,13 @@ require 'tempfile'
 require 'json'
 require_relative './ext/common_helper'
 require_relative './ext/zip_helper'
+require_relative './ext/jenkins_cac_helper'
 require 'aws-sdk-s3'
 require 'aws-sdk-cloudformation'
 require 'ciinabox-ecs' if Gem::Specification::find_all_by_name('ciinabox-ecs').any?
 require 'notifier'
+require 'minitar'
+require 'find'
 
 namespace :ciinabox do
 
@@ -30,7 +33,6 @@ namespace :ciinabox do
 
   #Load and merge standard ciinabox-provided parameters
   default_params = YAML.load(File.read("#{current_dir}/config/default_params.yml"))
-  default_jenkins_configuration_as_code = YAML.load(File.read("#{current_dir}/config/default_jenkins_configuration_as_code.yml"))
   lambda_params = YAML.load(File.read("#{current_dir}/config/default_lambdas.yml"))
   default_params.merge!(lambda_params)
 
@@ -42,12 +44,9 @@ namespace :ciinabox do
     config = default_params
   end
 
-  if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/jenkins_configuration_as_code.yml")
-    user_jenkins_configuration_as_code = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/jenkins_configuration_as_code.yml"))
-    jenkins_configuration_as_code = default_jenkins_configuration_as_code.merge(user_jenkins_configuration_as_code)
-  else
-    user_jenkins_configuration_as_code = {}
-    jenkins_configuration_as_code = default_jenkins_configuration_as_code
+  jenkins_configuration_as_code = {}
+  if has_cac
+    jenkins_configuration_as_code = cac_yaml
   end
 
   Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].each {|config_file|
@@ -580,16 +579,20 @@ namespace :ciinabox do
     unless jenkins_configuration_as_code['jenkins'].nil?
       log_header 'Package contains jenkins configuration'
 
-      FileUtils.rmtree 'output/configurationascode'
+      cac_output = './output/configurationascode'
+      log_header 'Clearing Cac_output: ' + cac_output
+      FileUtils.rmtree cac_output
 
-      overlay_folder = "output/configurationascode/overlay/"
+      overlay_folder = "#{cac_output}/overlay/"
       FileUtils.mkdir_p overlay_folder
+
+      File.write("#{overlay_folder}/jenkins.yaml", jenkins_configuration_as_code.to_yaml(:Separator => ''))
 
       def windows? #:nodoc:
         RbConfig::CONFIG['host_os'] =~ /^(mswin|mingw|cygwin)/
       end
 
-      dirs = ["#{current_dir}/configurationascode/root/", "#{}/output/configurationascode/overlay/"]
+      dirs = ["#{current_dir}/configurationascode/root/", overlay_folder]
       overlay_tar_file = 'output/configurationascode/overlay.tar'
       puts "Creating tar..."+overlay_tar_file+"\n"
       tar = Minitar::Output.new(overlay_tar_file)
