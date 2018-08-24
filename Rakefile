@@ -725,6 +725,10 @@ namespace :ciinabox do
   end
 
   def aws_execute(config, cmd, output = nil)
+    if `which aws` == "" then
+      puts "No awscli found in $PATH (using `which`)"
+      exit 1
+    end
     config['aws_profile'].nil? ? '' : cmd << "--profile #{config['aws_profile']}"
     config['aws_region'].nil? ? '' : cmd << "--region #{config['aws_region']}"
     args = cmd.join(" ")
