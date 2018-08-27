@@ -249,10 +249,11 @@ namespace :ciinabox do
       check_active_ciinabox(config)
       status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
       if status != 0
-        puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
         if fail_to_find_good
+          puts "Stack deleted"
           exit 0
         else
+          puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
           exit 1
         end
       end
