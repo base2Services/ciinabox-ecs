@@ -251,7 +251,7 @@ namespace :ciinabox do
       if status != 0
         if fail_to_find_good
           puts "Stack deleted"
-          exit 0
+          break
         else
           puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
           exit 1
