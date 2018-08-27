@@ -280,6 +280,7 @@ namespace :ciinabox do
   desc('Watches the status of the active ciinabox and sends a desktop notification message')
   task :watch_notify do
     last_status = ""
+    fail_to_find_good = false
     while true
       check_active_ciinabox(config)
       status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
@@ -290,6 +291,13 @@ namespace :ciinabox do
               title: "ciinabox-ecs: #{config['ciinabox_name']}",
               message: "fail to get status for #{config['ciinabox_name']}...has it been created?"
           )
+        elsif fail_to_find_good
+          puts "Stack #{config['ciinabox_name']} deleted"
+          Notifier.notify(
+              title: "ciinabox-ecs: #{config['ciinabox_name']}",
+              message: "Stack #{config['ciinabox_name']} deleted"
+          )
+          exit 0
         else
           puts "fail to get status for #{config['ciinabox_name']} disappeared from listing"
           Notifier.notify(
@@ -324,6 +332,9 @@ namespace :ciinabox do
         exit 1
       else
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
+      end
+      if output == 'DELETE_IN_PROGRESS'
+        fail_to_find_good = true
       end
       last_status = output
       sleep(4)
