@@ -324,10 +324,10 @@ namespace :ciinabox do
             message: "ciinabox has failed is being rolledback"
             )
       elsif output == 'ROLLBACK_COMPLETE'
-        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} rollbck completed"
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} rollback completed"
         Notifier.notify(
             title: "ciinabox-ecs: #{config['ciinabox_name']}",
-            message: "rollbck completed"
+            message: "rollback completed"
             )
         exit 1
       else
