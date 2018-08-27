@@ -244,12 +244,17 @@ namespace :ciinabox do
   desc('Watches the status of the active ciinabox')
   task :watch do
     last_status = ""
+    fail_to_find_good = false
     while true
       check_active_ciinabox(config)
       status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
       if status != 0
         puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
-        exit 1
+        if fail_to_find_good
+          exit 0
+        else
+          exit 1
+        end
       end
       output = result.chop!
       next if last_status == output
@@ -262,6 +267,9 @@ namespace :ciinabox do
         exit 1
       else
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
+      end
+      if output == 'DELETE_IN_PROGRESS'
+        fail_to_find_good = true
       end
       last_status = output
       sleep(4)
