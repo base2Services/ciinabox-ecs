@@ -257,7 +257,8 @@ namespace :ciinabox do
           exit 1
         end
       end
-      output = result.chop!
+      output = res
+      ult.chop!
       next if last_status == output
       if output == 'CREATE_COMPLETE' || output == 'UPDATE_COMPLETE'
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
@@ -606,7 +607,7 @@ namespace :ciinabox do
       overlay_folder = "#{cac_output}/overlay/"
       FileUtils.mkdir_p overlay_folder
 
-      File.write("#{overlay_folder}/jenkins.yaml", jenkins_configuration_as_code.to_yaml(:Separator => ''))
+      File.write("#{overlay_folder}/var/jenkins_home/jenkins.yaml", jenkins_configuration_as_code.to_yaml(:Separator => ''))
 
       def windows? #:nodoc:
         RbConfig::CONFIG['host_os'] =~ /^(mswin|mingw|cygwin)/
