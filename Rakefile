@@ -262,7 +262,7 @@ namespace :ciinabox do
       if output == 'CREATE_COMPLETE' || output == 'UPDATE_COMPLETE'
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
         display_ecs_ip_address config
-        exit 0
+        break
       elsif output == 'ROLLBACK_COMPLETE'
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed and rolled back"
         exit 1
@@ -297,7 +297,7 @@ namespace :ciinabox do
               title: "ciinabox-ecs: #{config['ciinabox_name']}",
               message: "Stack #{config['ciinabox_name']} deleted"
           )
-          exit 0
+          break
         else
           puts "fail to get status for #{config['ciinabox_name']} disappeared from listing"
           Notifier.notify(
