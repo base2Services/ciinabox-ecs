@@ -48,7 +48,7 @@ import static java.util.logging.Level.WARNING
             def plugin = Jenkins.getInstance().getPluginManager().getPlugin(baseName);
             println(baseName);
             if (plugin == null) {
-                println("ERROR: plugin didn't register under expected basename, might need to update or install plugin");
+                println("Need to update or install plugin");
 
                 JSONObject cfg = new JSONObject().
                         element("name", baseName).
