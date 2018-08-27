@@ -604,8 +604,9 @@ namespace :ciinabox do
       log_header 'Clearing Cac_output: ' + cac_output
       FileUtils.rmtree cac_output
 
-      overlay_folder = "#{cac_output}/overlay/var/jenkins_home/"
+      overlay_folder = "#{cac_output}/overlay/"
       FileUtils.mkdir_p overlay_folder
+      FileUtils.mkdir_p "#{overlay_folder}/var/jenkins_home/"
 
       File.write("#{overlay_folder}/var/jenkins_home/jenkins.yaml", jenkins_configuration_as_code.to_yaml(:Separator => ''))
 
