@@ -32,9 +32,17 @@ namespace :ciinabox do
   @ciinabox_name = ciinabox_name
 
   #Load and merge standard ciinabox-provided parameters
+  default_jenkins_plugins = File.readlines("#{current_dir}/config/default_plugins.list").map(&:strip)
+  jenkins_plugins = nil
   default_params = YAML.load(File.read("#{current_dir}/config/default_params.yml"))
   lambda_params = YAML.load(File.read("#{current_dir}/config/default_lambdas.yml"))
   default_params.merge!(lambda_params)
+
+  if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins.list")
+    jenkins_plugins = File.readlines("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins.list").map(&:strip)
+  else
+    jenkins_plugins = default_jenkins_plugins
+  end
 
   if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
     user_params = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml"))
@@ -597,68 +605,77 @@ namespace :ciinabox do
   task :package_cac do
     check_active_ciinabox(config)
 
+    log_header 'Package contains jenkins overrides'
+    cac_output = './output/configurationascode'
+    log_header 'Clearing Cac_output: ' + cac_output
+    FileUtils.rmtree cac_output
+
+    overlay_folder = "#{cac_output}/overlay/"
+    FileUtils.mkdir_p overlay_folder
+
     unless jenkins_configuration_as_code['jenkins'].nil?
-      log_header 'Package contains jenkins configuration'
-
-      cac_output = './output/configurationascode'
-      log_header 'Clearing Cac_output: ' + cac_output
-      FileUtils.rmtree cac_output
-
-      overlay_folder = "#{cac_output}/overlay/"
-      FileUtils.mkdir_p overlay_folder
+      log_header 'Jenkins configuration as code file'
       FileUtils.mkdir_p "#{overlay_folder}/var/jenkins_home/"
-
       File.write("#{overlay_folder}/var/jenkins_home/jenkins.yaml", jenkins_configuration_as_code.to_yaml(:Separator => ''))
+    end
 
-      def windows? #:nodoc:
-        RbConfig::CONFIG['host_os'] =~ /^(mswin|mingw|cygwin)/
-      end
+    unless jenkins_plugins == nil
+      log_header 'Post-start Plugin loader'
+      FileUtils.mkdir_p "#{overlay_folder}/inits/"
+      var contents = <<-HEREDOC
+      #!/bin/bash -ex
+      /usr/local/bin/install-plugins.sh #{jenkins_plugins.join(' ')}
+      HEREDOC
+      File.write("#{overlay_folder}/inits/001-plugins.sh", contents)
+      FileUtils.chmod "a+x", "#{overlay_folder}/inits/001-plugins.sh"
+    end
 
-      dirs = ["#{current_dir}/configurationascode/root/", overlay_folder]
-      overlay_tar_file = 'output/configurationascode/overlay.tar'
-      puts "Creating tar..."+overlay_tar_file+"\n"
-      tar = Minitar::Output.new(overlay_tar_file)
-      begin
-        dirs.each do |dir|
-          Find.find(dir).
-              select {|name| File.file?(name) }.
-              each do |iname|
-            stats = {}
-            stat = File.stat(iname)
-            stats[:mode]   ||= stat.mode
-            stats[:mtime]  ||= stat.mtime
-            stats[:size] = stat.size
+    def windows? #:nodoc:
+      RbConfig::CONFIG['host_os'] =~ /^(mswin|mingw|cygwin)/
+    end
+    dirs = ["#{current_dir}/configurationascode/root/", overlay_folder]
+    overlay_tar_file = 'output/configurationascode/overlay.tar'
+    puts "Creating tar..."+overlay_tar_file+"\n"
+    tar = Minitar::Output.new(overlay_tar_file)
+    begin
+      dirs.each do |dir|
+        Find.find(dir).
+            select {|name| File.file?(name) }.
+            each do |iname|
+              stats = {}
+              stat = File.stat(iname)
+              stats[:mode]   ||= stat.mode
+              stats[:mtime]  ||= stat.mtime
+              stats[:size] = stat.size
 
-            if windows?
-              stats[:uid]  = nil
-              stats[:gid]  = nil
-            else
-              stats[:uid]  ||= stat.uid
-              stats[:gid]  ||= stat.gid
-            end
-
-            nname = iname.slice dir.length, iname.length - dir.length
-            puts iname, nname
-
-            tar.tar.add_file_simple(nname, stats) do |os|
-              stats[:current] = 0
-              yield :file_start, nname, stats if block_given?
-              File.open(iname, 'rb') do |ff|
-                until ff.eof?
-                  stats[:currinc] = os.write(ff.read(4096))
-                  stats[:current] += stats[:currinc]
-                  yield :file_progress, name, stats if block_given?
-                end
+              if windows?
+                stats[:uid]  = nil
+                stats[:gid]  = nil
+              else
+                stats[:uid]  ||= stat.uid
+                stats[:gid]  ||= stat.gid
               end
-              yield :file_done, nname, stats if block_given?
+
+              nname = iname.slice dir.length, iname.length - dir.length
+              puts iname, nname
+
+              tar.tar.add_file_simple(nname, stats) do |os|
+                stats[:current] = 0
+                yield :file_start, nname, stats if block_given?
+                File.open(iname, 'rb') do |ff|
+                  until ff.eof?
+                    stats[:currinc] = os.write(ff.read(4096))
+                    stats[:current] += stats[:currinc]
+                    yield :file_progress, name, stats if block_given?
+                  end
+                end
+                yield :file_done, nname, stats if block_given?
+              end
             end
           end
-        end
-      ensure
-        tar.close
-        FileUtils.rmtree overlay_folder
-      end
-
+    ensure
+      tar.close
+      FileUtils.rmtree overlay_folder
     end
   end
 
