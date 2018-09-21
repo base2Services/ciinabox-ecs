@@ -622,7 +622,7 @@ namespace :ciinabox do
     unless jenkins_plugins == nil
       log_header 'Post-start Plugin loader'
       FileUtils.mkdir_p "#{overlay_folder}/inits/"
-      var contents = <<-HEREDOC
+      contents = <<-HEREDOC
       #!/bin/bash -ex
       /usr/local/bin/install-plugins.sh #{jenkins_plugins.join(' ')}
       HEREDOC
