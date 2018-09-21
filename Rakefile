@@ -622,9 +622,9 @@ namespace :ciinabox do
     unless jenkins_plugins == nil
       log_header 'Post-start Plugin loader'
       FileUtils.mkdir_p "#{overlay_folder}/inits/"
-      contents = <<-HEREDOC
-      #!/bin/bash -ex
-      /usr/local/bin/install-plugins.sh #{jenkins_plugins.join(' ')}
+      contents = <<~HEREDOC
+        #!/bin/bash -ex
+        /usr/local/bin/install-plugins.sh #{jenkins_plugins.join(' ')}
       HEREDOC
       File.write("#{overlay_folder}/inits/001-plugins.sh", contents)
       FileUtils.chmod "a+x", "#{overlay_folder}/inits/001-plugins.sh"
