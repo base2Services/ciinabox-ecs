@@ -511,6 +511,8 @@ namespace :ciinabox do
     puts "ssh -A ec2-user@bastion.#{environmentName}.#{config['dns_domain']} -i #{keypair}"
     puts "# and then"
     puts "ssh #{get_ecs_ip_address(config)}"
+    puts "Or one liner"
+    puts "ssh -A ec2-user@bastion.#{environmentName}.#{config['dns_domain']} -i #{keypair} -t ssh #{get_ecs_ip_address(config)} -t sudo su "
   end
 
   desc('Package Lambda Functions as ZipFiles')
