@@ -630,6 +630,94 @@ namespace :ciinabox do
       FileUtils.chmod "a+x", "#{overlay_folder}/inits/001-plugins.sh"
     end
 
+    if File.directory?("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins/")
+      localhpi = []
+      localpath = "/var/jenkins_home/plugins_to_install/"
+      groovypath = "/var/jenkins_home/init.groovy.d/"
+      FileUtils.mkdir_p File.join(overlay_folder, localpath)
+      FileUtils.mkdir_p File.join(overlay_folder, groovypath)
+      fs = Dir.glob("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins/*.hpi")
+      fs.each do |f|
+        localloc = localpath + File.basename(f)
+        FileUtils.copy_file(f, File.join(overlay_folder, localloc))
+        localhpi << localloc
+      end
+      contents = <<~HEREDOC
+import hudson.model.*
+import hudson.remoting.Future
+import jenkins.model.*
+import net.sf.json.JSONArray
+import net.sf.json.JSONObject
+import org.apache.commons.lang.StringUtils
+
+import java.util.concurrent.TimeUnit
+import java.util.jar.JarFile
+import java.util.jar.Manifest
+
+import static java.util.logging.Level.WARNING
+
+{ String msg = getClass().protectionDomain.codeSource.location.path ->
+    println "--> ${msg}"
+
+    Jenkins.instance.getPluginManager().getPlugins()
+    Jenkins.instance.getUpdateCenter().updateAllSites()
+
+    def updates = 0;
+    /* plugins */ [
+#{localhpi.map{|x|"            '" + x + "'"}.join(",\n")}
+    ].each { pluginFilename ->
+        try {
+            println("Reading: " + pluginFilename);
+            def baseName = "";
+            JSONArray dependencies = new JSONArray();
+            try {
+                JarFile j = new JarFile(pluginFilename);
+                Manifest m = j.getManifest();
+                String deps = m.getMainAttributes().getValue("Plugin-Dependencies");
+                baseName = m.getMainAttributes().getValue("Short-Name");
+
+                if (StringUtils.isNotBlank(deps)) {
+                    String[] plugins = deps.split(",");
+                    for (String p : plugins) {
+                        String[] attrs = p.split("[:;]");
+                        dependencies.add(new JSONObject()
+                                .element("name", attrs[0])
+                                .element("version", attrs[1])
+                                .element("optional", p.contains("resolution:=optional")));
+                    }
+                }
+            } catch(IOException e) {
+                LOGGER.log(WARNING, "Unable to setup dependency list for plugin upload", e);
+            }
+
+            def plugin = Jenkins.getInstance().getPluginManager().getPlugin(baseName);
+            println(baseName);
+            if (plugin == null) {
+                println("Need to update or install plugin");
+
+                JSONObject cfg = new JSONObject().
+                        element("name", baseName).
+                        element("version", "0"). // unused but mandatory
+                        element("url", "file://" + pluginFilename).
+                        element("dependencies", dependencies);
+                def us = new UpdateSite(UpdateCenter.ID_UPLOAD, null);
+                def p = new UpdateSite.Plugin(us, UpdateCenter.ID_UPLOAD, cfg);
+                def f = p.deploy(false);
+                println("Blocking until successfully downloaded");
+                f.get();
+                updates++;
+            }
+        } catch (Exception x) {
+            x.printStackTrace()
+        }
+    }
+
+    println "--> ${msg} ... done"
+} ()
+      HEREDOC
+      File.write(File.join(overlay_folder, groovypath, "002-packaged-hpi-install.sh"), contents)
+    end
+
     def windows? #:nodoc:
       RbConfig::CONFIG['host_os'] =~ /^(mswin|mingw|cygwin)/
     end
