@@ -715,7 +715,7 @@ namespace :ciinabox do
             println "--> ${msg} ... done"
         } ()
       HEREDOC
-      File.write(File.join(overlay_folder, groovypath, "002-packaged-hpi-install.sh"), contents)
+      File.write(File.join(overlay_folder, groovypath, "002-packaged-hpi-install.groovy"), contents)
     end
 
     def windows? #:nodoc:
