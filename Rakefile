@@ -507,7 +507,8 @@ namespace :ciinabox do
     keypair = "#{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem"
     `ssh-add #{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem`
     puts "# execute the following:"
-    puts "ssh -A ec2-user@nata.#{config['dns_domain']} -i #{keypair}"
+    environmentName="ciinabox"
+    puts "ssh -A ec2-user@bastion.#{environmentName}.#{config['dns_domain']} -i #{keypair}"
     puts "# and then"
     puts "ssh #{get_ecs_ip_address(config)}"
   end
@@ -633,89 +634,20 @@ namespace :ciinabox do
     if File.directory?("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins/")
       localhpi = []
       localpath = "/var/jenkins_home/plugins_to_install/"
-      groovypath = "/var/jenkins_home/init.groovy.d/"
       FileUtils.mkdir_p File.join(overlay_folder, localpath)
-      FileUtils.mkdir_p File.join(overlay_folder, groovypath)
       fs = Dir.glob("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins/*.hpi")
       fs.each do |f|
         localloc = localpath + File.basename(f)
         FileUtils.copy_file(f, File.join(overlay_folder, localloc))
         localhpi << localloc
       end
+      FileUtils.mkdir_p "#{overlay_folder}/inits/"
       contents = <<~HEREDOC
-        import hudson.model.*
-        import hudson.remoting.Future
-        import jenkins.model.*
-        import net.sf.json.JSONArray
-        import net.sf.json.JSONObject
-        import org.apache.commons.lang.StringUtils
-        
-        import java.util.concurrent.TimeUnit
-        import java.util.jar.JarFile
-        import java.util.jar.Manifest
-        
-        import static java.util.logging.Level.WARNING
-        
-        { String msg = getClass().protectionDomain.codeSource.location.path ->
-            println "--> ${msg}"
-        
-            Jenkins.instance.getPluginManager().getPlugins()
-            Jenkins.instance.getUpdateCenter().updateAllSites()
-        
-            def updates = 0;
-            /* plugins */ [
-        #{localhpi.map{|x|"            '" + x + "'"}.join(",\n")}
-            ].each { pluginFilename ->
-                try {
-                    println("Reading: " + pluginFilename);
-                    def baseName = "";
-                    JSONArray dependencies = new JSONArray();
-                    try {
-                        JarFile j = new JarFile(pluginFilename);
-                        Manifest m = j.getManifest();
-                        String deps = m.getMainAttributes().getValue("Plugin-Dependencies");
-                        baseName = m.getMainAttributes().getValue("Short-Name");
-        
-                        if (StringUtils.isNotBlank(deps)) {
-                            String[] plugins = deps.split(",");
-                            for (String p : plugins) {
-                                String[] attrs = p.split("[:;]");
-                                dependencies.add(new JSONObject()
-                                        .element("name", attrs[0])
-                                        .element("version", attrs[1])
-                                        .element("optional", p.contains("resolution:=optional")));
-                            }
-                        }
-                    } catch(IOException e) {
-                        LOGGER.log(WARNING, "Unable to setup dependency list for plugin upload", e);
-                    }
-        
-                    def plugin = Jenkins.getInstance().getPluginManager().getPlugin(baseName);
-                    println(baseName);
-                    if (plugin == null) {
-                        println("Need to update or install plugin");
-        
-                        JSONObject cfg = new JSONObject().
-                                element("name", baseName).
-                                element("version", "0"). // unused but mandatory
-                                element("url", "file://" + pluginFilename).
-                                element("dependencies", dependencies);
-                        def us = new UpdateSite(UpdateCenter.ID_UPLOAD, null);
-                        def p = new UpdateSite.Plugin(us, UpdateCenter.ID_UPLOAD, cfg);
-                        def f = p.deploy(true);
-                        println("Blocking until successfully downloaded");
-                        f.get();
-                        updates++;
-                    }
-                } catch (Exception x) {
-                    x.printStackTrace()
-                }
-            }
-        
-            println "--> ${msg} ... done"
-        } ()
+        #!/bin/bash -ex
+        /usr/local/bin/install-plugins-local.sh #{localhpi.join(' ')}
       HEREDOC
-      File.write(File.join(overlay_folder, groovypath, "002-packaged-hpi-install.groovy"), contents)
+      File.write("#{overlay_folder}/inits/002-plugins.sh", contents)
+      FileUtils.chmod "a+x", "#{overlay_folder}/inits/002-plugins.sh"
     end
 
     def windows? #:nodoc:
@@ -945,19 +877,51 @@ namespace :ciinabox do
   end
 
   def display_ecs_ip_address(config)
+    puts "1"
     ip_address = get_ecs_ip_address(config)
     if ip_address.nil?
       puts "Unable to get ECS cluster private ip"
     else
+      puts "2"
       puts "ECS cluster private ip:#{ip_address}"
+      puts "3"
+    end
+    puts "4"
+  end
+
+  def get_ecs_physical_resource_id(config)
+    status, result = aws_execute(config, [
+        'cloudformation',
+        'describe-stack-resource',
+        '--stack-name ' + 'ciinabox-cactest',
+        '--logical-resource-id ECSStack',
+        '--query "*.PhysicalResourceId"',
+        '--out text'
+    ])
+    if status != 0
+      return nil
+    else
+      return result
     end
   end
 
+  def get_ecs_stackname(config)
+    ecs_stack_physical_id = get_ecs_physical_resource_id(config)
+    if ecs_stack_physical_id.nil?
+      return nil
+    end
+    return /:stack\/([^:\/]+)\/[^:\/]+$/.match('arn:aws:cloudformation:ap-southeast-2:537712071186:stack/ciinabox-cactest-ECSStack-HX6Y4SEAIATW/1bf3b450-c154-11e8-9c5f-06b8df84f342')[1]
+  end
+
   def get_ecs_ip_address(config)
+    ecs_stack_name = get_ecs_stackname(config)
+    if ecs_stack_name.nil?
+      return nil
+    end
     status, result = aws_execute(config, [
         'ec2',
         'describe-instances',
-        '--query Reservations[*].Instances[?Tags[?Value==\`ciinabox-ecs\`]].PrivateIpAddress',
+        '--query Reservations[*].Instances[?Tags[?Value==\`'+ecs_stack_name+'\`]].PrivateIpAddress',
         '--out text'
     ])
     if status != 0
