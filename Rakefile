@@ -702,7 +702,7 @@ namespace :ciinabox do
                                 element("dependencies", dependencies);
                         def us = new UpdateSite(UpdateCenter.ID_UPLOAD, null);
                         def p = new UpdateSite.Plugin(us, UpdateCenter.ID_UPLOAD, cfg);
-                        def f = p.deploy(false);
+                        def f = p.deploy(true);
                         println("Blocking until successfully downloaded");
                         f.get();
                         updates++;
