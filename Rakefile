@@ -325,7 +325,7 @@ namespace :ciinabox do
         )
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
         display_ecs_ip_address config
-        exit 0
+        break
       elsif output == 'ROLLBACK_IN_PROGRESS'
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed is being rolledback"
         Notifier.notify(
