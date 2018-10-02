@@ -20,7 +20,7 @@ CloudFormation {
   Parameter('SecurityGroupNatGateway') { Type 'String' }
 
   # Lambda function ARN for CR that creates and validates ACM
-  Parameter('CRAcmCertArn') { Type 'String' }
+  Parameter('CRAcmCertArn') { Type 'String' } if acm_auto_issue_validate
 
   Resource("ECSRole") {
     Type 'AWS::IAM::Role'
