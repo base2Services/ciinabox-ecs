@@ -231,6 +231,33 @@ namespace :ciinabox do
     end
   end
 
+  desc('Watches the status of the active ciinabox')
+  task :watch do
+    last_status = ""
+    while true
+      check_active_ciinabox(config)
+      status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
+      if status != 0
+        puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
+        exit 1
+      end
+      output = result.chop!
+      next if last_status == output
+      if output == 'CREATE_COMPLETE' || output == 'UPDATE_COMPLETE'
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
+        display_ecs_ip_address config
+        exit 0
+      elsif output == 'ROLLBACK_COMPLETE'
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed and rolled back"
+        exit 1
+      else
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
+      end
+      last_status = output
+      sleep(4)
+    end
+  end
+
   desc('Create self-signed SSL certs for use with ciinabox')
   task :create_server_cert do
     check_active_ciinabox(config)
@@ -277,6 +304,9 @@ namespace :ciinabox do
     check_active_ciinabox(config)
     ciinabox_name = config['ciinabox_name']
     keypair_dir = "#{ciinaboxes_dir}/#{ciinabox_name}/ssl"
+    unless config['include_bastion_stack']
+      puts "include_bastion_stack is set to false; it's recommend that this is set to true if you wish to ssh to the host."
+    end
     if File.exists?("#{keypair_dir}/ciinabox.pem")
       puts "keypair for ciinabox #{ciinabox_name} already exists...please delete if you wish to re-create it"
       exit 1
@@ -378,6 +408,10 @@ namespace :ciinabox do
 
   desc('SSH into your ciinabox environment')
   task :ssh do
+    unless config['include_bastion_stack']
+      puts "include_bastion_stack is set to false; you can't ssh into nothing."
+      exit 1
+    end
     keypair = "#{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem"
     `ssh-add #{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem`
     puts "# execute the following:"
