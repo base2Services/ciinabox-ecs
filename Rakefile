@@ -11,9 +11,13 @@ require 'tempfile'
 require 'json'
 require_relative './ext/common_helper'
 require_relative './ext/zip_helper'
+require_relative './ext/jenkins_cac_helper'
 require 'aws-sdk-s3'
 require 'aws-sdk-cloudformation'
 require 'ciinabox-ecs' if Gem::Specification::find_all_by_name('ciinabox-ecs').any?
+require 'notifier'
+require 'minitar'
+require 'find'
 
 namespace :ciinabox do
 
@@ -28,9 +32,17 @@ namespace :ciinabox do
   @ciinabox_name = ciinabox_name
 
   #Load and merge standard ciinabox-provided parameters
-  default_params = YAML.load(File.read("#{current_dir}/config/default_params.yml")) if File.exist?("#{current_dir}/config/default_params.yml")
+  default_jenkins_plugins = File.readlines("#{current_dir}/config/default_plugins.list").map(&:strip)
+  jenkins_plugins = nil
+  default_params = YAML.load(File.read("#{current_dir}/config/default_params.yml"))
   lambda_params = YAML.load(File.read("#{current_dir}/config/default_lambdas.yml"))
   default_params.merge!(lambda_params)
+
+  if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins.list")
+    jenkins_plugins = File.readlines("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins.list").map(&:strip)
+  else
+    jenkins_plugins = default_jenkins_plugins
+  end
 
   if File.exist?("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml")
     user_params = YAML.load(File.read("#{ciinaboxes_dir}/#{ciinabox_name}/config/params.yml"))
@@ -40,11 +52,17 @@ namespace :ciinabox do
     config = default_params
   end
 
+  jenkins_configuration_as_code = {}
+  if has_cac
+    jenkins_configuration_as_code = cac_yaml
+  end
+
   Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].each {|config_file|
-    if not config_file.include?('params.yml')
-      config = config.merge(YAML.load(File.read(config_file)))
-    end
+    next if config_file.include?('params.yml')
+    next if config_file.include?('jenkins_configuration_as_code.yml')
+    config = config.merge(YAML.load(File.read(config_file)))
   }
+
   config['lambdas'] = {} unless config.key? 'lambdas'
   config['lambdas'].extend(config['default_lambdas'])
 
@@ -81,7 +99,7 @@ namespace :ciinabox do
 
   # Generate cloudformation templates, includes packaging of lambda functions
   desc("Generate CloudFormation templates")
-  task :generate => ['ciinabox:package_lambdas'] do
+  task :generate => ['ciinabox:package_lambdas', 'ciinabox:package_cac'] do
     check_active_ciinabox(config)
     FileUtils.mkdir_p 'output/services'
 
@@ -234,24 +252,98 @@ namespace :ciinabox do
   desc('Watches the status of the active ciinabox')
   task :watch do
     last_status = ""
+    fail_to_find_good = false
     while true
       check_active_ciinabox(config)
       status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
       if status != 0
-        puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
-        exit 1
+        if fail_to_find_good
+          puts "Stack deleted"
+          break
+        else
+          puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
+          exit 1
+        end
       end
-      output = result.chop!
+      output = res
+      ult.chop!
       next if last_status == output
       if output == 'CREATE_COMPLETE' || output == 'UPDATE_COMPLETE'
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
         display_ecs_ip_address config
-        exit 0
+        break
       elsif output == 'ROLLBACK_COMPLETE'
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed and rolled back"
         exit 1
       else
         puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
+      end
+      if output == 'DELETE_IN_PROGRESS'
+        fail_to_find_good = true
+      end
+      last_status = output
+      sleep(4)
+    end
+  end
+
+  desc('Watches the status of the active ciinabox and sends a desktop notification message')
+  task :watch_notify do
+    last_status = ""
+    fail_to_find_good = false
+    while true
+      check_active_ciinabox(config)
+      status, result = aws_execute(config, ['cloudformation', 'describe-stacks', "--stack-name #{stack_name}", '--query "Stacks[0].StackStatus"', '--out text'])
+      if status != 0
+        if last_status == ""
+          puts "fail to get status for #{config['ciinabox_name']}...has it been created?"
+          Notifier.notify(
+              title: "ciinabox-ecs: #{config['ciinabox_name']}",
+              message: "fail to get status for #{config['ciinabox_name']}...has it been created?"
+          )
+        elsif fail_to_find_good
+          puts "Stack #{config['ciinabox_name']} deleted"
+          Notifier.notify(
+              title: "ciinabox-ecs: #{config['ciinabox_name']}",
+              message: "Stack #{config['ciinabox_name']} deleted"
+          )
+          break
+        else
+          puts "fail to get status for #{config['ciinabox_name']} disappeared from listing"
+          Notifier.notify(
+              title: "ciinabox-ecs: #{config['ciinabox_name']}",
+              message: "fail to get status for #{config['ciinabox_name']} disappeared from listing"
+          )
+        end
+        exit 1
+      end
+      output = result.chop!
+      next if last_status == output
+      if output == 'CREATE_COMPLETE' || output == 'UPDATE_COMPLETE'
+        Notifier.notify(
+            title: "ciinabox-ecs: #{config['ciinabox_name']}",
+            message: "ciinabox is alive!!!!"
+        )
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is alive!!!!"
+        display_ecs_ip_address config
+        break
+      elsif output == 'ROLLBACK_IN_PROGRESS'
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox has failed is being rolledback"
+        Notifier.notify(
+            title: "ciinabox-ecs: #{config['ciinabox_name']}",
+            message: "ciinabox has failed is being rolledback"
+            )
+      elsif output == 'ROLLBACK_COMPLETE'
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} rollback completed"
+        Notifier.notify(
+            title: "ciinabox-ecs: #{config['ciinabox_name']}",
+            message: "rollback completed"
+            )
+        exit 1
+      else
+        puts Time.now.strftime("%Y/%m/%d %H:%M") + " #{config['ciinabox_name']} ciinabox is in state: #{output}"
+      end
+      if output == 'DELETE_IN_PROGRESS'
+        fail_to_find_good = true
       end
       last_status = output
       sleep(4)
@@ -415,9 +507,12 @@ namespace :ciinabox do
     keypair = "#{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem"
     `ssh-add #{ciinaboxes_dir}/#{ciinabox_name}/ssl/ciinabox.pem`
     puts "# execute the following:"
-    puts "ssh -A ec2-user@nata.#{config['dns_domain']} -i #{keypair}"
+    environmentName="ciinabox"
+    puts "ssh -A ec2-user@bastion.#{environmentName}.#{config['dns_domain']} -i #{keypair}"
     puts "# and then"
     puts "ssh #{get_ecs_ip_address(config)}"
+    puts "Or one liner"
+    puts "ssh -A ec2-user@bastion.#{environmentName}.#{config['dns_domain']} -i #{keypair} -t ssh #{get_ecs_ip_address(config)} -t sudo su "
   end
 
   desc('Package Lambda Functions as ZipFiles')
@@ -506,6 +601,103 @@ namespace :ciinabox do
       end
 
       FileUtils.rmtree 'output/package_lambdas'
+    end
+  end
+
+  desc('Package Configuration As Code as a TarFile')
+  task :package_cac do
+    check_active_ciinabox(config)
+
+    log_header 'Package contains jenkins overrides'
+    cac_output = './output/configurationascode'
+    log_header 'Clearing Cac_output: ' + cac_output
+    FileUtils.rmtree cac_output
+
+    overlay_folder = "#{cac_output}/overlay/"
+    FileUtils.mkdir_p overlay_folder
+
+    unless jenkins_configuration_as_code['jenkins'].nil?
+      log_header 'Jenkins configuration as code file'
+      FileUtils.mkdir_p "#{overlay_folder}/var/jenkins_home/"
+      File.write("#{overlay_folder}/var/jenkins_home/jenkins.yaml", jenkins_configuration_as_code.to_yaml(:Separator => ''))
+    end
+
+    unless jenkins_plugins == nil
+      log_header 'Post-start Plugin loader'
+      FileUtils.mkdir_p "#{overlay_folder}/inits/"
+      contents = <<~HEREDOC
+        #!/bin/bash -ex
+        /usr/local/bin/install-plugins.sh #{jenkins_plugins.join(' ')}
+      HEREDOC
+      File.write("#{overlay_folder}/inits/001-plugins.sh", contents)
+      FileUtils.chmod "a+x", "#{overlay_folder}/inits/001-plugins.sh"
+    end
+
+    if File.directory?("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins/")
+      localhpi = []
+      localpath = "/var/jenkins_home/plugins_to_install/"
+      FileUtils.mkdir_p File.join(overlay_folder, localpath)
+      fs = Dir.glob("#{ciinaboxes_dir}/#{ciinabox_name}/config/plugins/*.hpi")
+      fs.each do |f|
+        localloc = localpath + File.basename(f)
+        FileUtils.copy_file(f, File.join(overlay_folder, localloc))
+        localhpi << localloc
+      end
+      FileUtils.mkdir_p "#{overlay_folder}/inits/"
+      contents = <<~HEREDOC
+        #!/bin/bash -ex
+        /usr/local/bin/install-plugins-local.sh #{localhpi.join(' ')}
+      HEREDOC
+      File.write("#{overlay_folder}/inits/002-plugins.sh", contents)
+      FileUtils.chmod "a+x", "#{overlay_folder}/inits/002-plugins.sh"
+    end
+
+    def windows? #:nodoc:
+      RbConfig::CONFIG['host_os'] =~ /^(mswin|mingw|cygwin)/
+    end
+    dirs = ["#{current_dir}/configurationascode/root/", overlay_folder]
+    overlay_tar_file = 'output/configurationascode/overlay.tar'
+    puts "Creating tar..."+overlay_tar_file+"\n"
+    tar = Minitar::Output.new(overlay_tar_file)
+    begin
+      dirs.each do |dir|
+        Find.find(dir).
+            select {|name| File.file?(name) }.
+            each do |iname|
+              stats = {}
+              stat = File.stat(iname)
+              stats[:mode]   ||= stat.mode
+              stats[:mtime]  ||= stat.mtime
+              stats[:size] = stat.size
+
+              if windows?
+                stats[:uid]  = nil
+                stats[:gid]  = nil
+              else
+                stats[:uid]  ||= stat.uid
+                stats[:gid]  ||= stat.gid
+              end
+
+              nname = iname.slice dir.length, iname.length - dir.length
+              puts iname, nname
+
+              tar.tar.add_file_simple(nname, stats) do |os|
+                stats[:current] = 0
+                yield :file_start, nname, stats if block_given?
+                File.open(iname, 'rb') do |ff|
+                  until ff.eof?
+                    stats[:currinc] = os.write(ff.read(4096))
+                    stats[:current] += stats[:currinc]
+                    yield :file_progress, name, stats if block_given?
+                  end
+                end
+                yield :file_done, nname, stats if block_given?
+              end
+            end
+          end
+    ensure
+      tar.close
+      FileUtils.rmtree overlay_folder
     end
   end
 
@@ -662,6 +854,10 @@ namespace :ciinabox do
   end
 
   def aws_execute(config, cmd, output = nil)
+    if `which aws` == "" then
+      puts "No awscli found in $PATH (using `which`)"
+      exit 1
+    end
     config['aws_profile'].nil? ? '' : cmd << "--profile #{config['aws_profile']}"
     config['aws_region'].nil? ? '' : cmd << "--region #{config['aws_region']}"
     args = cmd.join(" ")
@@ -691,11 +887,39 @@ namespace :ciinabox do
     end
   end
 
+  def get_ecs_physical_resource_id(config)
+    status, result = aws_execute(config, [
+        'cloudformation',
+        'describe-stack-resource',
+        '--stack-name ' + 'ciinabox-cactest',
+        '--logical-resource-id ECSStack',
+        '--query "*.PhysicalResourceId"',
+        '--out text'
+    ])
+    if status != 0
+      return nil
+    else
+      return result
+    end
+  end
+
+  def get_ecs_stackname(config)
+    ecs_stack_physical_id = get_ecs_physical_resource_id(config)
+    if ecs_stack_physical_id.nil?
+      return nil
+    end
+    return /:stack\/([^:\/]+)\/[^:\/]+$/.match('arn:aws:cloudformation:ap-southeast-2:537712071186:stack/ciinabox-cactest-ECSStack-HX6Y4SEAIATW/1bf3b450-c154-11e8-9c5f-06b8df84f342')[1]
+  end
+
   def get_ecs_ip_address(config)
+    ecs_stack_name = get_ecs_stackname(config)
+    if ecs_stack_name.nil?
+      return nil
+    end
     status, result = aws_execute(config, [
         'ec2',
         'describe-instances',
-        '--query Reservations[*].Instances[?Tags[?Value==\`ciinabox-ecs\`]].PrivateIpAddress',
+        '--query Reservations[*].Instances[?Tags[?Value==\`'+ecs_stack_name+'\`]].PrivateIpAddress',
         '--out text'
     ])
     if status != 0

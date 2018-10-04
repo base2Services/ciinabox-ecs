@@ -319,3 +319,6 @@ vpn_udp_public: false
 # Default public access is considered whole internet
 publicAccess:
   - 0.0.0.0/0
+
+cloudwatch:
+cloudstat:
