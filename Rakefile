@@ -604,7 +604,7 @@ namespace :ciinabox do
     end
   end
 
-  desc('Package Configuration As Code Functions as a TarFile')
+  desc('Package Configuration As Code as a TarFile')
   task :package_cac do
     check_active_ciinabox(config)
 
@@ -879,16 +879,12 @@ namespace :ciinabox do
   end
 
   def display_ecs_ip_address(config)
-    puts "1"
     ip_address = get_ecs_ip_address(config)
     if ip_address.nil?
       puts "Unable to get ECS cluster private ip"
     else
-      puts "2"
       puts "ECS cluster private ip:#{ip_address}"
-      puts "3"
     end
-    puts "4"
   end
 
   def get_ecs_physical_resource_id(config)
