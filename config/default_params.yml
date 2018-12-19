@@ -122,6 +122,9 @@ webHooks:
   - 165.254.227.0/24
   - 131.103.28.0/24
   - 185.166.140.0/22
+  - 18.205.93.0/25
+  - 18.234.32.128/25
+  - 13.52.5.0/25
 
 # if set to true, security group allowing connections from NAT gateway will be assigned to
 # ecs cluster (useful for windows jenkins slaves)
