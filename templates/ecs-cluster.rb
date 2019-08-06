@@ -144,8 +144,7 @@ CloudFormation {
   if defined? enable_cloudwatch_agent and enable_cloudwatch_agent
     enable_cloudwatch_agent_userdata = [
       "mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/\n",
-      "echo 'Fetching CloudWatch config...'\n",
-      "aws s3 cp s3://public.base2.services/config/cloudwatch-agent/linux/amazon-cloudwatch-agent.json /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json\n",
+      "echo '#{File.open('config/files/amazon-cloudwatch-agent.json').read()}' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json\n",
       "wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm\n",
       "echo 'Installing CloudWatch agent...'\n",
       "rpm -U amazon-cloudwatch-agent.rpm\n",
