@@ -140,6 +140,19 @@ CloudFormation {
                             "echo \"#{proxy_config}\" >> /opt/proxy/proxy_config.conf\n"
   end
 
+  enable_cloudwatch_agent_userdata = []
+  if defined? enable_cloudwatch_agent and enable_cloudwatch_agent
+    enable_cloudwatch_agent_userdata = [
+      "mkdir -p /opt/aws/amazon-cloudwatch-agent/etc/\n",
+      "echo '#{File.open('config/files/amazon-cloudwatch-agent.json').read()}' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json\n",
+      "wget https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm\n",
+      "echo 'Installing CloudWatch agent...'\n",
+      "rpm -U amazon-cloudwatch-agent.rpm\n",
+      "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s\n"]
+  end
+
+
+
   ecs_allow_sg_ingress = [
     { IpProtocol: 'tcp', FromPort: '32768', ToPort: '65535', CidrIp: FnJoin( "", [ FnFindInMap('EnvironmentType','ciinabox','NetworkPrefix'),".", FnFindInMap('EnvironmentType','ciinabox','StackOctet'), ".0.0/",FnFindInMap('EnvironmentType','ciinabox','StackMask') ] ) },
   ]
@@ -174,6 +187,7 @@ CloudFormation {
         "echo ECS_ENABLE_TASK_CPU_MEM_LIMIT=false >> /etc/ecs/ecs.config\n",
         "INSTANCE_ID=$(echo `/opt/aws/bin/ec2-metadata -i | cut -f2 -d:`)\n",
         "PRIVATE_IP=`/opt/aws/bin/ec2-metadata -o | cut -f2 -d: | cut -f2 -d-`\n",
+        "hostname ciinabox-ecs-xx\n",
         "#{proxy_config_userdata}",
         "yum install -y python-pip\n",
         "python-pip install --upgrade awscli\n",
@@ -185,14 +199,15 @@ CloudFormation {
         "mkdir -p /data\n",
         "mount /data && echo \"ECS Data volume already formatted\" || mkfs -t ext4 /dev/xvdf\n",
         "mount -a && echo 'mounting ECS Data volume' || echo 'failed to mount ECS Data volume'\n",
-        "#{user_data_init_devices}",
         "export BOOTSTRAP=/data/bootstrap \n",
         "if [ ! -e \"$BOOTSTRAP\" ]; then echo \"boostrapping\"; chmod -R 777 /data; mkdir -p /data/jenkins; chown -R 1000:1000 /data/jenkins;  touch $BOOTSTRAP; fi \n",
         "ifconfig eth0 mtu 1500\n",
         "curl https://amazon-ssm-", Ref("AWS::Region"), ".s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o /tmp/amazon-ssm-agent.rpm\n",
         "yum install -y /tmp/amazon-ssm-agent.rpm\n",
+        *enable_cloudwatch_agent_userdata,
         "stop ecs\n",
         "service docker stop\n",
+        "#{user_data_init_devices}",
         "service docker start\n",
         "start ecs\n",
         "echo 'done!!!!'\n"

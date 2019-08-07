@@ -1,0 +1,55 @@
+{
+  "agent": {
+    "metrics_collection_interval": 60,
+    "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+    "debug": false
+  },
+  "metrics": {
+    "metrics_collected": {
+      "disk": {
+        "resources": [
+          "/",
+          "/data",
+          "/var/lib/docker"
+        ],
+        "measurement": [
+          {
+            "name": "used_percent",
+            "rename": "DiskSpaceUsedPercent"
+          },
+          {
+            "name": "inodes_used",
+            "rename": "INodesUsedCount"
+          },
+          {
+            "name": "inodes_total",
+            "rename": "INodesTotalCount"
+          }
+        ]
+      },
+      "mem": {
+        "measurement": [
+          {
+            "name": "used_percent",
+            "rename": "MemoryUsedPercent"
+          }
+        ]
+      }
+    }
+  },
+  "logs": {
+    "logs_collected": {
+      "files": {
+        "collect_list": [
+          {
+            "file_path": "/var/log/cloud-init-output.log",
+            "log_group_name": "/aws/cloudwatch-agent/ciinabox-ecs-xx",
+            "log_stream_name": "cloud-init-output.log-{instance_id}",
+            "timezone": "UTC"
+          }
+        ]
+      }
+    }
+  }
+}
+
