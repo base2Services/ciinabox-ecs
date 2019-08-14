@@ -40,6 +40,8 @@ namespace :ciinabox do
     config = default_params
   end
 
+  config.merge!('current_dir'=>current_dir)
+
   Dir["#{ciinaboxes_dir}/#{ciinabox_name}/config/*.yml"].each {|config_file|
     if not config_file.include?('params.yml')
       config = config.merge(YAML.load(File.read(config_file)))
