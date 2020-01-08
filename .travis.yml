@@ -16,7 +16,7 @@ script:
   - gem build ciinabox-ecs.gemspec
   - gem install ciinabox-ecs-*.gem
   - which ciinabox-ecs && ciinabox-ecs help
-  - cfndsl -u
+  - cfndsl -u 9.0.0
   - |
     git clone https://github.com/base2services/ciinabox-ecs-examples
     cd ciinabox-ecs-examples
