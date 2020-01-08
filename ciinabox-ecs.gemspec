@@ -17,7 +17,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'rake', '~>12'
   s.add_runtime_dependency 'aws-sdk-s3', '~>1'
   s.add_runtime_dependency 'aws-sdk-cloudformation', '~>1'
-  s.add_runtime_dependency 'cfndsl', '~>0.16'
+  s.add_runtime_dependency 'cfndsl', '0.17.1'
   s.add_runtime_dependency 'cfn_manage', '~>0'
   s.add_runtime_dependency 'deep_merge', '~>1.2'
   s.add_runtime_dependency 'rubyzip', '~> 1.2'
