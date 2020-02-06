@@ -190,7 +190,6 @@ CloudFormation {
         "hostname ciinabox-ecs-xx\n",
         "#{proxy_config_userdata}",
         "yum install -y python-pip\n",
-        "python-pip install --upgrade awscli\n",
         "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref(volume_name), " --instance-id ${INSTANCE_ID} --device /dev/sdf\n",
         "echo 'waiting for ECS Data volume to attach' && sleep 20\n",
         "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-network-interface --network-interface-id ",  Ref('ECSENI'), " --instance-id ${INSTANCE_ID} --device-index 1\n",
