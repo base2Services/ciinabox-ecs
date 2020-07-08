@@ -181,6 +181,9 @@ CloudFormation {
     if not ecs_block_device_mapping.empty?
       Property("BlockDeviceMappings", ecs_block_device_mapping)
     end
+    if defined? ecs_instance_spot_price
+      SpotPrice ecs_instance_spot_price
+    end
     UserData FnBase64(FnJoin("", [
         "#!/bin/bash\n",
         "echo ECS_CLUSTER=", Ref('ECSCluster'), " >> /etc/ecs/ecs.config\n",

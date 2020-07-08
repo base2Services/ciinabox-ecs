@@ -1,8 +1,9 @@
 require 'rake'
+require 'date'
 
 Gem::Specification.new do |s|
   s.name = 'ciinabox-ecs'
-  s.version = '0.2.16'
+  s.version = '0.2.17'
   s.version = "#{s.version}.alpha.#{Time.now.getutc.to_i}" if ENV['TRAVIS'] and ENV['TRAVIS_BRANCH'] != 'master'
   s.date = Date.today.to_s
   s.summary = 'Manage ciinabox on Aws Ecs'
