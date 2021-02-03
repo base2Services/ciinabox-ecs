@@ -285,7 +285,7 @@ CloudFormation {
             Name: 'proxy',
             Memory: 256,
             Cpu: 100,
-            Image: 'jwilder/nginx-proxy',
+            Image: 'ghcr.io/base2services/ciinabox-nginx',
             PortMappings: [{
                 HostPort: 8080,
                 ContainerPort: 80

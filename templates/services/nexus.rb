@@ -5,7 +5,7 @@ if !defined? timezone
   timezone = 'GMT'
 end
 
-image = 'base2/ciinabox-nexus'
+image = 'ghcr.io/base2services/ciinabox-nexus'
 container_path = '/sonatype-work'
 java_opts = ''
 memory = 1024
