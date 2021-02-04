@@ -15,10 +15,9 @@ end
 # Prefixing application images allows us to 'vendorize' ciinabox into client's account by setting
 # ciinabox_repo to ${account_no}.dkr.ecr.${region}.amazonaws.com
 if not defined? ciinabox_repo
-  ciinabox_repo=''
+    ciinabox_repo = 'ghcr.io/base2services'
 end
-
-image = "#{ciinabox_repo}ghcr.io/base2services/ciinabox-jenkins:lts"
+image = "#{ciinabox_repo}/ciinabox-jenkins:lts"
 
 jenkins_java_opts = ''
 memory = 2048
@@ -110,7 +109,7 @@ if defined? include_diind_slave and include_diind_slave
   dind_definition = {
       Name: 'jenkins-docker-dind-slave',
       Memory: slave_memory,
-      Image: "#{ciinabox_repo}ghcr.io/base2services/ciinabox-docker-slave:#{docker_slave_version}",
+      Image: "#{ciinabox_repo}/ciinabox-docker-slave:#{docker_slave_version}",
       Environment: [{Name: 'RUN_DOCKER_IN_DOCKER', Value: 1}],
       Essential: false,
       Privileged: true
@@ -141,7 +140,7 @@ if defined? include_dood_slave and include_dood_slave
   dood_definition =  {
       Name: 'jenkins-docker-dood-slave',
       Memory: slave_memory,
-      Image: "#{ciinabox_repo}ghcr.io/base2services/ciinabox-docker-slave:#{docker_slave_version}",
+      Image: "#{ciinabox_repo}/ciinabox-docker-slave:#{docker_slave_version}",
       Environment: [{Name: 'RUN_DOCKER_IN_DOCKER', Value: 0}],
       MountPoints: [
           {
