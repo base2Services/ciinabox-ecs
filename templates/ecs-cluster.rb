@@ -181,6 +181,9 @@ CloudFormation {
     if not ecs_block_device_mapping.empty?
       Property("BlockDeviceMappings", ecs_block_device_mapping)
     end
+    if defined? ecs_instance_spot_price
+      SpotPrice ecs_instance_spot_price
+    end
     UserData FnBase64(FnJoin("", [
         "#!/bin/bash\n",
         "echo ECS_CLUSTER=", Ref('ECSCluster'), " >> /etc/ecs/ecs.config\n",
@@ -190,10 +193,9 @@ CloudFormation {
         "hostname ciinabox-ecs-xx\n",
         "#{proxy_config_userdata}",
         "yum install -y python-pip\n",
-        "python-pip install --upgrade awscli\n",
-        "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref(volume_name), " --instance-id ${INSTANCE_ID} --device /dev/sdf\n",
+        "aws --region ", Ref("AWS::Region"), " ec2 attach-volume --volume-id ", Ref(volume_name), " --instance-id ${INSTANCE_ID} --device /dev/sdf\n",
         "echo 'waiting for ECS Data volume to attach' && sleep 20\n",
-        "/usr/local/bin/aws --region ", Ref("AWS::Region"), " ec2 attach-network-interface --network-interface-id ",  Ref('ECSENI'), " --instance-id ${INSTANCE_ID} --device-index 1\n",
+        "aws --region ", Ref("AWS::Region"), " ec2 attach-network-interface --network-interface-id ",  Ref('ECSENI'), " --instance-id ${INSTANCE_ID} --device-index 1\n",
         "echo 'waiting for ECS ENI to attach' && sleep 20\n",
         "echo '/dev/xvdf   /data        ext4    defaults,nofail 0   2' >> /etc/fstab\n",
         "mkdir -p /data\n",
