@@ -1,6 +1,7 @@
 require 'cfndsl'
 require 'securerandom'
 require 'deep_merge'
+require_relative '../../ext/helper'
 
 # default values
 shared_envs = {
