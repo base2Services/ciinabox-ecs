@@ -1,4 +1,5 @@
 require 'cfndsl'
+require_relative '../../ext/helper'
 
 if !defined? timezone
   timezone = 'GMT'
