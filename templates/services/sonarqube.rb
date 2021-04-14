@@ -17,6 +17,9 @@ if service
   memory = service['ContainerMemory'] || 2048
   cpu = service['ContainerCPU'] || 300
   container_port = service['InstancePort'] || 0
+  postgres_url_param_arn = service['PostgresUrlParamArn'] || nil
+  postgres_user_param_arn = service['PostgresUserParamArn'] || nil
+  postgres_password_param_arn = service['PostgresPasswordParamArn'] || nil
 end
 
 CloudFormation {
@@ -30,54 +33,70 @@ CloudFormation {
 
   Resource('SonarQubeTask') {
     Type "AWS::ECS::TaskDefinition"
-    Property('ContainerDefinitions', [
-      {
-        Name: 'sonarqube',
-        MemoryReservation: memory,
-        Cpu: cpu,
-        Image: image,
-        Environment: [
-          {
-            Name: 'VIRTUAL_HOST',
-            Value: "sonar.#{dns_domain}"
-          },
-          {
-            Name: 'VIRTUAL_PORT',
-            Value: '9000'
-          }
-        ],
-        Ulimits: [
-          {
-            Name: "nofile",
-            SoftLimit: 65536,
-            HardLimit: 65536
-          }
-        ],
-        Essential: true,
-        MountPoints: [
-          {
-            ContainerPath: '/etc/localtime',
-            SourceVolume: 'timezone',
-            ReadOnly: true
-          },
-          {
-            ContainerPath: '/opt/sonarqube/extensions',
-            SourceVolume: 'sonarqube_extensions',
-            ReadOnly: false
-          },
-          {
-            ContainerPath: '/opt/sonarqube/logs',
-            SourceVolume: 'sonarqube_logs',
-            ReadOnly: false
-          },
-          {
-            ContainerPath: '/opt/sonarqube/data',
-            SourceVolume: 'sonarqube_data',
-            ReadOnly: false
-          }
-        ]
-      }
-    ])
+    Property('ExecutionRoleArn', FnGetAtt('TaskExecutionRole', 'Arn'))
+    sonarqube_container_def = {
+      Name: 'sonarqube',
+      MemoryReservation: memory,
+      Cpu: cpu,
+      Image: image,
+      Environment: [
+        {
+          Name: 'VIRTUAL_HOST',
+          Value: "sonar.#{dns_domain}"
+        },
+        {
+          Name: 'VIRTUAL_PORT',
+          Value: '9000'
+        }
+      ],
+      Ulimits: [
+        {
+          Name: "nofile",
+          SoftLimit: 65536,
+          HardLimit: 65536
+        }
+      ],
+      Essential: true,
+      MountPoints: [
+        {
+          ContainerPath: '/etc/localtime',
+          SourceVolume: 'timezone',
+          ReadOnly: true
+        },
+        {
+          ContainerPath: '/opt/sonarqube/extensions',
+          SourceVolume: 'sonarqube_extensions',
+          ReadOnly: false
+        },
+        {
+          ContainerPath: '/opt/sonarqube/logs',
+          SourceVolume: 'sonarqube_logs',
+          ReadOnly: false
+        },
+        {
+          ContainerPath: '/opt/sonarqube/data',
+          SourceVolume: 'sonarqube_data',
+          ReadOnly: false
+        }
+      ]
+    }
+    if postgres_user_param_arn then
+      sonarqube_container_def[:Secrets] = [
+        {
+          Name: 'SONARQUBE_JDBC_URL',
+          ValueFrom: postgres_url_param_arn
+        },
+        {
+          Name: 'SONARQUBE_JDBC_USERNAME',
+          ValueFrom: postgres_user_param_arn
+        },
+        {
+          Name: 'SONARQUBE_JDBC_PASSWORD',
+          ValueFrom: postgres_password_param_arn
+        }
+      ]
+    end
+    Property('ContainerDefinitions', [sonarqube_container_def])
     Property('Volumes', [
       {
         Name: 'timezone',
@@ -109,6 +128,26 @@ CloudFormation {
           SourcePath: '/data/sonarqube/data'
         }
       }
+    ])
+  }
+
+  Resource('TaskExecutionRole') {
+    Type 'AWS::IAM::Role'
+    Property('AssumeRolePolicyDocument', {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "Service": "ecs-tasks.amazonaws.com"
+          },
+          "Action": "sts:AssumeRole"
+        }
+      ]
+    })
+    Property('ManagedPolicyArns', [
+      'arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess',
+      'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
     ])
   }
 
