@@ -190,6 +190,8 @@ CloudFormation {
         "echo ECS_ENABLE_TASK_CPU_MEM_LIMIT=false >> /etc/ecs/ecs.config\n",
         "INSTANCE_ID=$(echo `/opt/aws/bin/ec2-metadata -i | cut -f2 -d:`)\n",
         "PRIVATE_IP=`/opt/aws/bin/ec2-metadata -o | cut -f2 -d: | cut -f2 -d-`\n",
+        "echo 'vm.max_map_count=262144' >> /etc/sysctl.conf\n",
+        "sysctl -p\n",
         "hostname ciinabox-ecs-xx\n",
         "#{proxy_config_userdata}",
         "yum install -y python-pip\n",
