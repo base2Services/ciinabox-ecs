@@ -34,10 +34,11 @@ class CiinaboxEcsCli
       exit -1
     end
 
-    methods = args[0..args.size()-2]
+    margs = args.select{|i| !(i =~ /^-/)}
+    methods = margs[0..margs.size()-2]
 
     unless ENV.key? 'CIINABOX'
-      ciinabox_name = args[args.size()-1]
+      ciinabox_name = margs[margs.size()-1]
       ENV['CIINABOX'] = ciinabox_name
     end
 
