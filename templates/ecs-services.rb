@@ -137,20 +137,23 @@ CloudFormation {
     ])
   }
 
-  if defined? webHooks
-    rules = []
-    webHooks.each do |ip|
-      rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
-    end
-  else
-    rules = [{ IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: '192.168.1.1/32' }]
+  webHooks = webHooks || []
+  webHooksIpPrefixLists = webHooksIpPrefixLists || []
+
+  rules = []
+  webHooks.each do |ip|
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+  end
+
+  webHooksIpPrefixLists.each do |list|
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', SourcePrefixListId: list }
   end
 
   Resource("SecurityGroupWebHooks") {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
     Property('GroupDescription', 'WebHooks like github')
-    Property('SecurityGroupIngress', rules)
+    Property('SecurityGroupIngress', rules) if rules.any?
   }
 
   Resource('ToolsSSLCertificate') {
