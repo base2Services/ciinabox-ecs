@@ -264,6 +264,14 @@ CloudFormation {
     end
   end
 
+  log_group_retention = log_group_retention || 90
+
+  Resource("LogGroup") {
+    Type "AWS::Logs::LogGroup"
+    Property("LogGroupName", "/ciinabox/#{ciinabox_name}/proxy")
+    Property("RetentionInDays", log_group_retention)
+  }
+
   volumes = []
   mount_points = []
 
@@ -293,6 +301,14 @@ CloudFormation {
                 HostPort: 8080,
                 ContainerPort: 80
             }],
+            LogConfiguration: {
+              LogDriver: 'awslogs',
+              Options: {
+                'awslogs-group' => Ref("LogGroup"),
+                "awslogs-region" => Ref("AWS::Region"),
+                "awslogs-stream-prefix" => "proxy"
+              }
+            },
             Essential: true,
             MountPoints: mount_points
         }
