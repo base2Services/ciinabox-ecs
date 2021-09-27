@@ -88,6 +88,14 @@ container_definitions = [
                 Value: '8080'
             }
         ],
+        LogConfiguration: {
+            LogDriver: 'awslogs',
+            Options: {
+                'awslogs-group' => Ref("LogGroup"),
+                "awslogs-region" => Ref("AWS::Region"),
+                "awslogs-stream-prefix" => "jenkins"
+            }
+        },
         Essential: true,
         MountPoints: [
             {
@@ -112,6 +120,14 @@ if defined? include_diind_slave and include_diind_slave
       Memory: slave_memory,
       Image: "#{ciinabox_repo}/ciinabox-docker-slave:#{docker_slave_version}",
       Environment: [{Name: 'RUN_DOCKER_IN_DOCKER', Value: 1}],
+      LogConfiguration: {
+        LogDriver: 'awslogs',
+        Options: {
+          'awslogs-group' => Ref("LogGroup"),
+          "awslogs-region" => Ref("AWS::Region"),
+          "awslogs-stream-prefix" => "jenkins-docker-dind-slave"
+        }
+      },
       Essential: false,
       Privileged: true
   }
@@ -143,6 +159,14 @@ if defined? include_dood_slave and include_dood_slave
       Memory: slave_memory,
       Image: "#{ciinabox_repo}/ciinabox-docker-slave:#{docker_slave_version}",
       Environment: [{Name: 'RUN_DOCKER_IN_DOCKER', Value: 0}],
+      LogConfiguration: {
+        LogDriver: 'awslogs',
+        Options: {
+          'awslogs-group' => Ref("LogGroup"),
+          "awslogs-region" => Ref("AWS::Region"),
+          "awslogs-stream-prefix" => "jenkins-docker-dood-slave"
+        }
+      },
       MountPoints: [
           {
               ContainerPath: '/var/run/docker.sock',
@@ -184,6 +208,14 @@ CloudFormation {
   Parameter("ECSRole") {Type 'String'}
   Parameter("ServiceELB") {Type 'String'}
   Parameter('InternalELB') {Type 'String'} if internal_elb
+
+  log_group_retention = log_group_retention || 90
+
+  Resource("LogGroup") {
+    Type "AWS::Logs::LogGroup"
+    Property("LogGroupName", "/ciinabox/#{ciinabox_name}/jenkins")
+    Property("RetentionInDays", log_group_retention)
+  }
 
   Resource('JenkinsTask') {
     Type "AWS::ECS::TaskDefinition"
