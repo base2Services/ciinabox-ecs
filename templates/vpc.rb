@@ -158,6 +158,11 @@ CloudFormation {
   end
 
   rules = []
+
+  unless defined?(opsAccess) && !defined?(opsIpPrefixLists)
+    opsAccess = []
+  end
+
   opsAccess.each do |ip|
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
@@ -182,6 +187,11 @@ CloudFormation {
   }
 
   rules = []
+
+  unless defined?(devAccess) && !defined?(devIpPrefixLists)
+    devAccess = []
+  end
+
   devAccess.each do |ip|
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
