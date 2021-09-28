@@ -236,7 +236,7 @@ A common update would be to lock down ip access to your ciinabox environment
 
   or using AWS IP Prefix Lists
 
-    ```yaml
+  ```yaml
   ....
   #Environment Access
   #add list of public IP addresses you want to access the environment from
