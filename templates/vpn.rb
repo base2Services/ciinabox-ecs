@@ -41,9 +41,7 @@ CloudFormation do
   security_groups << Ref('VpnSecurityGroupOps')
 
   rules = []
-
-  rules = []
-
+  
   devAccess = devAccess || []
 
   devAccess.each do |ip|
