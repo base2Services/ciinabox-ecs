@@ -1,9 +1,10 @@
 name: test and build gem
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches:
+      - master
+      - develop
+      - feature/*
 
 jobs:
   build:
