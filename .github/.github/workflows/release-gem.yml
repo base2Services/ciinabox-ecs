@@ -1,0 +1,34 @@
+name: release gem
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build + Publish Gem
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out the repo
+      uses: actions/checkout@v2
+
+    - name: Set up Ruby 2.7
+      uses: actions/setup-ruby@v1
+      with:
+        ruby-version: 2.7.x
+
+    - name: rspec
+      run: |
+        gem install rspec
+        rspec
+
+    - name: build gem
+      run: |
+        gem build ciinabox-ecs.gemspec
+
+    - name: Publish gem
+      uses: dawidd6/action-publish-gem@v1
+      with:
+        api_key: ${{secrets.RUBYGEMS_API_KEY}}
+        github_token: ${{secrets.GITHUB_TOKEN}}
