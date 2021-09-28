@@ -41,6 +41,11 @@ CloudFormation do
   security_groups << Ref('VpnSecurityGroupOps')
 
   rules = []
+
+  rules = []
+
+  devAccess = devAccess || []
+
   devAccess.each do |ip|
     rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '9443', ToPort: '9443', CidrIp: ip }
@@ -48,11 +53,20 @@ CloudFormation do
     rules << { IpProtocol: 'udp', FromPort: '1194', ToPort: '1194', CidrIp: ip }
   end
 
+  devIpPrefixLists = devIpPrefixLists || []
+
+  devIpPrefixLists.each do |list|
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', SourcePrefixListId: list }
+    rules << { IpProtocol: 'tcp', FromPort: '9443', ToPort: '9443', SourcePrefixListId: list }
+    rules << { IpProtocol: 'tcp', FromPort: '943', ToPort: '943', SourcePrefixListId: list }
+    rules << { IpProtocol: 'udp', FromPort: '1194', ToPort: '1194', SourcePrefixListId: list }
+  end
+
   Resource("VpnSecurityGroupDev") {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
     Property('GroupDescription', 'Dev Team Access')
-    Property('SecurityGroupIngress', rules)
+    Property('SecurityGroupIngress', rules) if rules.any?
   }
 
   security_groups << Ref('VpnSecurityGroupDev')
