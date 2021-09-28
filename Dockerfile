@@ -1,5 +1,7 @@
 FROM ruby:2.5-alpine
 
+LABEL org.opencontainers.image.source = https://github.com/base2Services/ciinabox-ecs
+
 ARG CFNDSL_SPEC_VERSION=${CFNDSL_SPEC_VERSION:-9.0.0}
 ARG CIINABOX_ECS_VERSION='*'
 
