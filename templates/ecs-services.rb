@@ -137,20 +137,23 @@ CloudFormation {
     ])
   }
 
-  if defined? webHooks
-    rules = []
-    webHooks.each do |ip|
-      rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
-    end
-  else
-    rules = [{ IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: '192.168.1.1/32' }]
+  webHooks = webHooks || []
+  webHooksIpPrefixLists = webHooksIpPrefixLists || []
+
+  rules = []
+  webHooks.each do |ip|
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', CidrIp: ip }
+  end
+
+  webHooksIpPrefixLists.each do |list|
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', SourcePrefixListId: list }
   end
 
   Resource("SecurityGroupWebHooks") {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
     Property('GroupDescription', 'WebHooks like github')
-    Property('SecurityGroupIngress', rules)
+    Property('SecurityGroupIngress', rules) if rules.any?
   }
 
   Resource('ToolsSSLCertificate') {
@@ -261,6 +264,14 @@ CloudFormation {
     end
   end
 
+  log_group_retention = log_group_retention || 90
+
+  Resource("LogGroup") {
+    Type "AWS::Logs::LogGroup"
+    Property("LogGroupName", "/ciinabox/#{ciinabox_name}/proxy")
+    Property("RetentionInDays", log_group_retention)
+  }
+
   volumes = []
   mount_points = []
 
@@ -290,6 +301,14 @@ CloudFormation {
                 HostPort: 8080,
                 ContainerPort: 80
             }],
+            LogConfiguration: {
+              LogDriver: 'awslogs',
+              Options: {
+                'awslogs-group' => Ref("LogGroup"),
+                "awslogs-region" => Ref("AWS::Region"),
+                "awslogs-stream-prefix" => "proxy"
+              }
+            },
             Essential: true,
             MountPoints: mount_points
         }

@@ -1,13 +1,15 @@
 FROM ruby:2.5-alpine
 
+LABEL org.opencontainers.image.source = https://github.com/base2Services/ciinabox-ecs
+
 ARG CFNDSL_SPEC_VERSION=${CFNDSL_SPEC_VERSION:-9.0.0}
+ARG CIINABOX_ECS_VERSION='*'
 
 COPY . /src
 
 WORKDIR /src
-RUN rm ciinabox-ecs-*.gem ; \
-    gem build ciinabox-ecs.gemspec && \
-    gem install ciinabox-ecs-*.gem && \
+RUN gem build ciinabox-ecs.gemspec && \
+    gem install ciinabox-ecs-${CIINABOX_ECS_VERSION}.gem && \
     rm -rf /src
 
 RUN adduser -u 1000 -D ciinabox && \

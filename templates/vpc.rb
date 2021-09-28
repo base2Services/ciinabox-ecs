@@ -167,6 +167,13 @@ CloudFormation {
     rules << { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: ip }
   end
 
+  opsIpPrefixLists = opsIpPrefixLists || []
+
+  opsIpPrefixLists.each do |list|
+    rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', SourcePrefixListId: list }
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', SourcePrefixListId: list }
+  end
+
   Resource("SecurityGroupOps") {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
@@ -182,6 +189,13 @@ CloudFormation {
     rules << { IpProtocol: 'tcp', FromPort: '3389', ToPort: '3389', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '5665', ToPort: '5665', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '50000', ToPort: '50000', CidrIp: ip }
+  end
+
+  devIpPrefixLists = devIpPrefixLists || []
+
+  devIpPrefixLists.each do |list|
+    rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', SourcePrefixListId: list }
+    rules << { IpProtocol: 'tcp', FromPort: '443', ToPort: '443', SourcePrefixListId: list }
   end
 
   Resource("SecurityGroupDev") {
