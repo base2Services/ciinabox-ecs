@@ -158,6 +158,9 @@ CloudFormation {
   end
 
   rules = []
+
+  opsAccess = opsAccess || []
+
   opsAccess.each do |ip|
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
@@ -178,10 +181,13 @@ CloudFormation {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
     Property('GroupDescription', 'Ops External Access')
-    Property('SecurityGroupIngress', rules)
+    Property('SecurityGroupIngress', rules) if rules.any?
   }
 
   rules = []
+
+  devAccess = devAccess || []
+
   devAccess.each do |ip|
     rules << { IpProtocol: 'tcp', FromPort: '22', ToPort: '22', CidrIp: ip }
     rules << { IpProtocol: 'tcp', FromPort: '80', ToPort: '80', CidrIp: ip }
@@ -202,7 +208,7 @@ CloudFormation {
     Type 'AWS::EC2::SecurityGroup'
     Property('VpcId', Ref('VPC'))
     Property('GroupDescription', 'Dev Team Access')
-    Property('SecurityGroupIngress', rules)
+    Property('SecurityGroupIngress', rules) if rules.any?
   }
 
 
