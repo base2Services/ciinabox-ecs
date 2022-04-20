@@ -16,5 +16,5 @@ function pipinstall () {
 if [[ $(which docker) == '' ]]; then
     pipinstall
 else
-    docker run --rm -v $DIR/..:/dst -w /dst -u $UID python:3.6-alpine pip install aws-acm-cert-validator==0.1.11 -t lib
+    docker run --rm -v $DIR/..:/dst -w /dst -u $UID python:3.7-alpine pip install aws-acm-cert-validator==0.1.11 -t lib
 fi
