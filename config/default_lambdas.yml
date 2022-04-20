@@ -14,7 +14,7 @@ default_lambdas:
       local: true
       role: acmissuevalidate
       package_cmd: ./install.sh
-      runtime: python3.6
+      runtime: python3.7
       code: lambdas/acm_issuer_validator/lib
       vpc: false
       named: false
