@@ -95,6 +95,14 @@ CloudFormation {
               {
                   Name: 'VIRTUAL_PORT',
                   Value: '8080'
+              },
+              {
+                  Name: 'TRY_UPGRADE_IF_NO_MARKER',
+                  Value: 'true'
+              },
+              {
+                  Name: 'PLUGINS_FORCE_UPGRADE',
+                  Value: 'true'
               }
           ],
           LogConfiguration: {
